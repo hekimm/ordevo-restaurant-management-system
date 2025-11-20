@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Ordevo",
+    "slug": "ordevo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#667eea"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ordevo.waiter",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "supabaseUrl": "https://kiucehfasorbtftnferi.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpdWNlaGZhc29yYnRmdG5mZXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NzQ3MzgsImV4cCI6MjA3ODQ1MDczOH0.xetRavdybCP-gNwPNQJLeGOt5rVcHsM3Y2VKVTcPKSM",
+      "eas": {
+        "projectId": "0e818652-59af-492e-9242-3a4dfeb623af"
+      }
+    }
+  }
+}
