@@ -196,8 +196,8 @@ Bu proje özel bir projedir. Ticari kullanım için izin gereklidir.
 
 ## 📞 İletişim
 
-- Email: m.sirinyilmaz6@gmail.com
-- GitHub: [@yourusername](https://github.com/yourusername)
+
+- GitHub: [@hekimm](https://github.com/hwkimm)
 
 ## 🙏 Teşekkürler
 
