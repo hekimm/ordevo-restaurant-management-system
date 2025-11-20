@@ -1,0 +1,219 @@
+{
+  "folders": [
+    {
+      "name": "🖥️ Desktop (Electron)",
+      "path": "."
+    },
+    {
+      "name": "📱 Mobile (React Native)",
+      "path": "mobile-new"
+    },
+    {
+      "name": "🗄️ Database",
+      "path": "setup"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.expo": true,
+      "**/.git": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.expo": true
+    },
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-typescript-next",
+      "expo.vscode-expo-tools",
+      "mtxr.sqltools",
+      "mtxr.sqltools-driver-pg"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🖥️ Desktop: Dev",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "dev"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "🖥️ Desktop: Build",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "electron:build"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "📱 Mobile: Start",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["start"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "📱 Mobile: Android",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "android"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "📱 Mobile: iOS",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "ios"],
+        "console": "integratedTerminal"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "🚀 All: Dev Mode",
+        "configurations": [
+          "🖥️ Desktop: Dev",
+          "📱 Mobile: Start"
+        ],
+        "presentation": {
+          "hidden": false,
+          "group": "development",
+          "order": 1
+        }
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🖥️ Desktop: Install Dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "options": {
+          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "📱 Mobile: Install Dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "options": {
+          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "🚀 Install All Dependencies",
+        "dependsOn": [
+          "🖥️ Desktop: Install Dependencies",
+          "📱 Mobile: Install Dependencies"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      },
+      {
+        "label": "🖥️ Desktop: Dev",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": {
+          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated"
+        },
+        "isBackground": true
+      },
+      {
+        "label": "📱 Mobile: Start",
+        "type": "shell",
+        "command": "npm start",
+        "options": {
+          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated"
+        },
+        "isBackground": true
+      },
+      {
+        "label": "🖥️ Desktop: Build",
+        "type": "shell",
+        "command": "npm run electron:build",
+        "options": {
+          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "📱 Mobile: Build Android",
+        "type": "shell",
+        "command": "eas build --platform android --profile preview",
+        "options": {
+          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      }
+    ]
+  }
+}
