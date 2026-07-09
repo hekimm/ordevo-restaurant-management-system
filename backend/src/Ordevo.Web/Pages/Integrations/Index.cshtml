@@ -1,0 +1,78 @@
+@page "/integrations"
+@model Ordevo.Web.Pages.Integrations.IndexModel
+@{
+    ViewData["Title"] = "Entegrasyon";
+    ViewData["Section"] = "Dış Sistem";
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="content-grid two-col">
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Connector</h2>
+            <span class="count-pill">@Model.Connectors.Count kayıt</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Kod</th><th>Tip</th><th>Provider</th><th>Durum</th></tr></thead>
+                <tbody>
+                @foreach (var connector in Model.Connectors)
+                {
+                    <tr>
+                        <td>@connector.Code</td>
+                        <td>@connector.ConnectorType</td>
+                        <td>@connector.ProviderCode</td>
+                        <td><span class="status-pill">@connector.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Event outbox</h2>
+            <span class="count-pill">@Model.Events.Count event</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Event</th><th>Kaynak</th><th>Deneme</th><th>Durum</th></tr></thead>
+                <tbody>
+                @foreach (var ev in Model.Events)
+                {
+                    <tr>
+                        <td>@ev.EventType</td>
+                        <td>@ev.SourceModule</td>
+                        <td>@ev.Attempts</td>
+                        <td><span class="status-pill warn">@ev.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<section class="panel mt-3">
+    <div class="panel-head">
+        <h2>Terminal komutları</h2>
+        <span class="count-pill">@Model.Commands.Count komut</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th>Tip</th><th>Terminal</th><th>Order</th><th>Durum</th><th>Oluşturma</th></tr></thead>
+            <tbody>
+            @foreach (var command in Model.Commands)
+            {
+                <tr>
+                    <td>@command.CommandType</td>
+                    <td>@UiFormat.ShortId(command.TerminalId)</td>
+                    <td>@UiFormat.ShortId(command.OrderId)</td>
+                    <td><span class="status-pill">@command.Status</span></td>
+                    <td>@command.CreatedAt.ToLocalTime().ToString("dd.MM HH:mm")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

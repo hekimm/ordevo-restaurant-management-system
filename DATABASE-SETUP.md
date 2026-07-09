@@ -1,299 +1,139 @@
-# 🗄️ Ordevo - Database Kurulum Rehberi
+# Ordevo Database Kurulum Rehberi
 
-Projeyi sıfırdan kurmak için eksiksiz SQL scriptleri.
+Aktif veritabanı kurulumu Oracle ve Flyway üstünden yapılır. Eski Supabase/PostgreSQL dosyaları repo içinde duruyor, fakat yeni backend onları çalıştırmaz. Bu ayrım önemli: `legacy/` klasörü eski sürümün dokümante edilmiş hali, `backend/db/migrations` ise yeni sürümün gerçek migration kaynağıdır.
 
-## 📁 Klasör Yapısı
+## Önceki Database Yapısı
 
-```
-setup/          # İlk kurulum scriptleri
-├── 01-schema.sql           # Tablo ve index'ler
-├── 02-rls-policies.sql     # Güvenlik politikaları
-├── 03-realtime.sql         # Realtime subscriptions
-├── 04-functions.sql        # Database fonksiyonları
-├── 05-sample-data.sql      # Örnek veriler (opsiyonel)
-└── README.md
+Eski sürüm Supabase PostgreSQL kullanıyordu. Kurulum Supabase SQL Editor'de şu dosyaları sırayla çalıştırarak yapılıyordu:
 
-users/          # Kullanıcı yönetimi
-├── 01-add-waiter.sql       # Garson ekle
-├── 02-list-users.sql       # Kullanıcıları listele
-├── 03-delete-user.sql      # Kullanıcı sil
-├── 04-change-password.sql  # Şifre değiştir
-└── README.md
+- `legacy/setup/01-schema.sql`
+- `legacy/setup/02-rls-policies.sql`
+- `legacy/setup/03-realtime.sql`
+- `legacy/setup/04-functions.sql`
+- `legacy/setup/05-sample-data.sql`
 
-maintenance/    # Bakım ve optimizasyon
-├── 01-check-health.sql     # Sağlık kontrolü
-├── 02-cleanup-old-data.sql # Eski verileri temizle
-├── 03-vacuum-analyze.sql   # Optimizasyon
-└── README.md
-```
+O modelde ana tablolar `organizations`, `profiles`, `restaurant_tables`, `menu_categories`, `menu_items`, `orders`, `order_items`, `organization_settings`, `category_printer_mappings`, `weather_data` ve `daily_sales_archive` idi. Tenant izolasyonu Supabase RLS ile sağlanıyordu. Realtime davranışı Supabase publication üzerinden veriliyordu. Kullanıcı açma ve şifre değiştirme gibi işler `legacy/users` altındaki PostgreSQL scriptleriyle destekleniyordu.
 
-## 🚀 Hızlı Başlangıç
+Yeni mimaride bu model taşındı ama bire bir kopyalanmadı. Tenant ve branch ayrımı netleştirildi, kullanıcı ve izin modeli genişletildi, adisyon ve ödeme gibi kritik iş kuralları PL/SQL paketlerine alındı.
 
-### 1. Supabase Projesi Oluştur
-1. https://supabase.com adresine git
-2. "New Project" oluştur
-3. Project URL ve Anon Key'i kopyala
+## Yeni Database Yapısı
 
-### 2. Database Kurulumu
-Supabase SQL Editor'de sırayla çalıştır:
+Yeni aktif database Oracle'dır. Local geliştirme için `deploy/docker-compose.yml` Oracle 23ai Free container'ı açar. Schema Oracle 19c/23ai portable kalacak şekilde yazılmıştır.
 
-```sql
--- 1. Schema (Tablolar)
-\i setup/01-schema.sql
+Temel kurallar:
 
--- 2. RLS Politikaları
-\i setup/02-rls-policies.sql
+- Primary key değerleri uygulama tarafından üretilen `VARCHAR2(36)` GUID değerleridir.
+- Boolean alanlar `NUMBER(1)` ve `CHECK` constraint ile tutulur.
+- JSON alanları `CLOB` ve `IS JSON` constraint ile tutulur.
+- Para alanları `NUMBER(18,4)` kullanır.
+- Tenant'a ait tablolarda `TENANT_ID`, audit kolonları ve `ROW_VERSION` bulunur.
+- Kritik mutation'lar PL/SQL package içinde transaction olarak çalışır.
 
--- 3. Realtime
-\i setup/03-realtime.sql
+## Kurulum
 
--- 4. Fonksiyonlar
-\i setup/04-functions.sql
-
--- 5. Örnek Veriler (opsiyonel)
-\i setup/05-sample-data.sql
-```
-
-### 3. İlk Kullanıcı Oluştur
-Uygulamadan kayıt ol (Register sayfası):
-- Email: m.sirinyilmaz6@gmail.com
-- Şifre: (güçlü şifre)
-- Restoran Adı: (restoran adınız)
-
-### 4. Organization ID'yi Al
-```sql
-SELECT organization_id 
-FROM profiles 
-WHERE email = 'm.sirinyilmaz6@gmail.com';
-```
-
-### 5. Config Dosyalarını Güncelle
-```typescript
-// src/config/organization.ts
-// mobile-new/config/organization.ts
-ORGANIZATION_ID: 'buraya-organization-id-yapistir'
-```
-
-### 6. Garson Kullanıcısı Ekle
-```sql
--- users/01-add-waiter.sql
--- Email, şifre ve organization_id'yi düzenle
--- Çalıştır
-```
-
-## ✅ Kurulum Kontrolü
-
-### Tabloları Kontrol Et
-```sql
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public'
-ORDER BY table_name;
-```
-
-Beklenen tablolar:
-- ✅ organizations
-- ✅ profiles
-- ✅ restaurant_tables
-- ✅ menu_categories
-- ✅ menu_items
-- ✅ orders
-- ✅ order_items
-- ✅ organization_settings
-- ✅ category_printer_mappings
-- ✅ weather_data
-- ✅ daily_sales_archive
-
-### RLS Kontrolü
-```sql
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public'
-ORDER BY tablename;
-```
-
-Tüm tablolarda `rowsecurity = true` olmalı.
-
-### Realtime Kontrolü
-```sql
-SELECT tablename 
-FROM pg_publication_tables 
-WHERE pubname = 'supabase_realtime'
-ORDER BY tablename;
-```
-
-11 tablo listelenmelidir.
-
-## 📊 Database Schema
-
-### Core Tables
-
-**organizations** - Restoranlar
-- id, name, slug
-- created_at, updated_at
-
-**profiles** - Kullanıcılar
-- id, organization_id, email, full_name, role
-- Roller: owner, manager, cashier, waiter
-
-**restaurant_tables** - Masalar
-- id, organization_id, name, capacity
-- is_active, sort_order
-
-**menu_categories** - Menü Kategorileri
-- id, organization_id, name, sort_order
-
-**menu_items** - Menü Ürünleri
-- id, organization_id, category_id
-- name, description, price, vat_rate
-
-**orders** - Siparişler
-- id, organization_id, table_id
-- status (open/closed/cancelled)
-- opened_by_user_id, closed_by_user_id
-- opened_at, closed_at
-
-**order_items** - Sipariş Ürünleri
-- id, organization_id, order_id, menu_item_id
-- quantity, unit_price, total_price
-- status (pending/in_kitchen/served/cancelled)
-
-### Settings Tables
-
-**organization_settings** - Organizasyon Ayarları
-- auto_print_enabled, default_printer
-
-**category_printer_mappings** - Kategori-Yazıcı Eşleştirmeleri
-- category_id, printer_name
-
-### Analytics Tables
-
-**weather_data** - Hava Durumu
-- location, temperature, humidity, wind_speed
-
-**daily_sales_archive** - Günlük Satış Arşivi
-- business_date, total_orders, total_revenue
-
-## 🔐 Güvenlik
-
-### RLS (Row Level Security)
-- ✅ Tüm tablolarda aktif
-- ✅ Kullanıcılar sadece kendi organizasyonlarını görebilir
-- ✅ Rol bazlı yetkilendirme
-
-### Roller ve Yetkiler
-
-| Rol | Görüntüleme | Sipariş | Menü Yönetimi | Ayarlar |
-|-----|-------------|---------|---------------|---------|
-| Owner | ✅ | ✅ | ✅ | ✅ |
-| Manager | ✅ | ✅ | ✅ | ✅ |
-| Cashier | ✅ | ✅ | ❌ | ❌ |
-| Waiter | ✅ | ✅ | ❌ | ❌ |
-
-## 🔄 Realtime
-
-Tüm tablolar realtime subscription destekler:
-- Sipariş güncellemeleri
-- Masa durumu değişiklikleri
-- Menü değişiklikleri
-- Anlık bildirimler
-
-## 📝 Kullanım Senaryoları
-
-### Yeni Restoran Ekle
-1. Register sayfasından kayıt ol
-2. Organization otomatik oluşur
-3. Örnek veriler eklenir (opsiyonel)
-
-### Garson Ekle
-```sql
--- users/01-add-waiter.sql kullan
-```
-
-### Menü Güncelle
-Uygulama üzerinden:
-- Menu sayfası > Kategori/Ürün ekle
-
-### Sipariş Al
-Mobile app üzerinden:
-- Masa seç > Ürün ekle > Sipariş oluştur
-
-### Rapor Al
-Dashboard üzerinden:
-- Reports sayfası > Tarih seç > Export
-
-## 🔧 Bakım
-
-### Günlük
-```sql
--- maintenance/01-check-health.sql
-```
-
-### Haftalık
-```sql
--- maintenance/03-vacuum-analyze.sql
-```
-
-### Aylık
-```sql
--- maintenance/02-cleanup-old-data.sql
-```
-
-## 🆘 Sorun Giderme
-
-### "Permission Denied" Hatası
-```sql
--- RLS politikalarını kontrol et
-SELECT * FROM pg_policies WHERE schemaname = 'public';
-```
-
-### "Organization Not Found" Hatası
-```sql
--- Organization ID'yi kontrol et
-SELECT * FROM profiles WHERE email = 'your@email.com';
-```
-
-### Realtime Çalışmıyor
-```sql
--- Realtime'ı yeniden ekle
-ALTER PUBLICATION supabase_realtime DROP TABLE table_name;
-ALTER PUBLICATION supabase_realtime ADD TABLE table_name;
-```
-
-### Yavaş Sorgular
-```sql
--- Index'leri kontrol et
-SELECT * FROM pg_indexes WHERE schemaname = 'public';
-```
-
-## 📞 Destek
-
-Sorun yaşarsanız:
-1. Hata mesajını kontrol edin
-2. RLS politikalarını kontrol edin
-3. Kullanıcı rolünü kontrol edin
-4. Organization ID'nin doğru olduğundan emin olun
-
-## 🎯 Sonraki Adımlar
-
-1. ✅ Database kurulumu tamamlandı
-2. ✅ İlk kullanıcı oluşturuldu
-3. ✅ Organization ID alındı
-4. ✅ Config dosyaları güncellendi
-5. ✅ Garson kullanıcısı eklendi
-6. 🚀 Uygulamayı başlat!
+Altyapıyı başlat:
 
 ```bash
-# Electron App
-npm run dev
-
-# Mobile App
-cd mobile-new
-npm start
+cd deploy
+docker compose up -d
 ```
 
-## 📚 Daha Fazla Bilgi
+Oracle ilk açılışta `deploy/oracle-init/01-create-ordevo-user.sql` dosyasını çalıştırır. Bu dosya `FREEPDB1` içinde `ORDEVO` kullanıcısını oluşturur ve migration için gereken yetkileri verir.
 
-- `setup/README.md` - Kurulum detayları
-- `users/README.md` - Kullanıcı yönetimi
-- `maintenance/README.md` - Bakım ve optimizasyon
+Migration'ları uygula:
+
+```bash
+./db-migrate.sh migrate
+```
+
+Durumu kontrol et:
+
+```bash
+./db-migrate.sh info
+./db-migrate.sh validate
+```
+
+Flyway ayarları `backend/db/flyway.conf` içindedir. Script, migration klasörünü Flyway container'ına read-only mount eder ve compose network içindeki `oracle:1521/FREEPDB1` servisine bağlanır.
+
+## Migration Dosyaları
+
+| Migration | İçerik |
+| --- | --- |
+| `V1__baseline_platform.sql` | Platform ayarları ve ortak schema konvansiyonları |
+| `V2__identity.sql` | Tenant, branch, role, permission, user, device, refresh token ve audit log |
+| `V3__menu.sql` | Menü kategorileri, ürünler, modifier, price list, combo ve barkod |
+| `V4__ordering.sql` | Masa, adisyon, order item, modifier, indirim ve transfer tabloları |
+| `V5__pkg_ordering.sql` | Adisyon lifecycle PL/SQL paketi |
+| `V6__payment.sql` | Ödeme, refund, invoice ve cash movement tabloları |
+| `V7__pkg_payment.sql` | Ödeme ve order close PL/SQL paketi |
+| `V8__kitchen.sql` | KDS istasyonları |
+| `V9__inventory.sql` | Stok, reçete, tedarikçi, satın alma, fire ve sayım tabloları |
+| `V10__pkg_inventory.sql` | Stok hareketleri ve otomatik stok düşümü |
+| `V11__shift.sql` | Kasa ve vardiya oturumu tabloları |
+| `V12__pkg_shift.sql` | Vardiya lifecycle ve Z rapor hesapları |
+| `V13__reporting.sql` | Günlük satış arşivi, materialized view ve reporting paketi |
+| `V14__m9_crm.sql` | CRM, sadakat, kampanya, rezervasyon ve teslimat tabloları |
+| `V15__pkg_m9_crm.sql` | CRM ve kampanya iş kuralları |
+| `V16__sync.sql` | Offline sync outbox, checkpoint, client mutation ve conflict tabloları |
+| `V17__pkg_sync.sql` | Offline sync PL/SQL paketi |
+| `V18__integration.sql` | Connector, webhook, terminal ve command tabloları |
+| `V19__pkg_integration.sql` | Entegrasyon lifecycle paketi |
+| `V20__finance_print.sql` | Finans kayıtları, print template ve print job tabloları |
+| `V21__einvoice.sql` | e-Fatura/e-Arşiv doküman tablosu |
+
+## Eski Tablo Karşılıkları
+
+| Eski PostgreSQL | Yeni Oracle |
+| --- | --- |
+| `organizations` | `TENANTS` |
+| `profiles` | `USERS`, `USER_ROLES`, `USER_BRANCHES` |
+| `restaurant_tables` | `DINING_TABLES`, `TABLE_SECTIONS` |
+| `menu_categories` | `MENU_CATEGORIES` |
+| `menu_items` | `MENU_ITEMS`, `MODIFIER_GROUPS`, `MODIFIERS` |
+| `orders` | `ORDERS` |
+| `order_items` | `ORDER_ITEMS`, `ORDER_ITEM_MODIFIERS` |
+| `daily_sales_archive` | `DAILY_SALES_ARCHIVE`, `MV_DAILY_SALES` |
+| Supabase RLS | API authorization, JWT claims ve tenant-scoped queries |
+| Supabase Realtime | SignalR hub'ları |
+| PostgreSQL functions | Oracle PL/SQL packages |
+
+## Kontrol Komutları
+
+API hazır mı:
+
+```bash
+curl http://localhost:5144/health/ready
+```
+
+Migration durumu:
+
+```bash
+cd deploy
+./db-migrate.sh info
+```
+
+Oracle container logları:
+
+```bash
+cd deploy
+docker compose logs oracle
+```
+
+## Development Bağlantı Bilgileri
+
+| Alan | Değer |
+| --- | --- |
+| JDBC URL | `jdbc:oracle:thin:@//oracle:1521/FREEPDB1` |
+| Local API connection string | `User Id=ORDEVO;Password=Ordevo_Dev_2026;Data Source=localhost:1521/FREEPDB1` |
+| Schema | `ORDEVO` |
+| SYS password | `Oracle_Dev_2026` |
+
+Bu değerler sadece local development içindir. Production'da secret yönetimi, ayrı schema parolası, backup policy ve migration onayı gerekir.
+
+## Sorun Giderme
+
+Oracle healthy olmadan migration çalıştırılırsa bağlantı hatası alınır. `docker compose ps` çıktısında Oracle healthy görünene kadar beklemek gerekir.
+
+`ORDEVO` kullanıcısı yoksa container ilk kurulum scriptini çalıştırmamış olabilir. Volume daha önce hatalı bir durumda oluştuysa local development için volume silinip tekrar oluşturulabilir.
+
+Flyway checksum hatası alınırsa uygulanmış migration dosyası sonradan değişmiş demektir. Development ortamında sebep bilinmeden repair çalıştırmak yerine önce hangi dosyanın değiştiğini kontrol etmek daha sağlıklıdır.

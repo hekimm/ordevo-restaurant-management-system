@@ -1,21 +1,31 @@
 {
   "folders": [
     {
-      "name": "🖥️ Desktop (Electron)",
-      "path": "."
+      "name": "Backend",
+      "path": "backend"
     },
     {
-      "name": "📱 Mobile (React Native)",
-      "path": "mobile-new"
+      "name": "Web UI",
+      "path": "backend/src/Ordevo.Web"
     },
     {
-      "name": "🗄️ Database",
-      "path": "setup"
+      "name": "Desktop WPF",
+      "path": "backend/src/Ordevo.Desktop.Wpf"
+    },
+    {
+      "name": "Mobile",
+      "path": "mobile"
+    },
+    {
+      "name": "Legacy (old version)",
+      "path": "legacy"
     }
   ],
   "settings": {
     "files.exclude": {
       "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
       "**/dist": true,
       "**/build": true,
       "**/.expo": true,
@@ -23,15 +33,16 @@
     },
     "search.exclude": {
       "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
       "**/dist": true,
       "**/build": true,
       "**/.expo": true
     },
-    "typescript.tsdk": "node_modules/typescript/lib",
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit"
+    "[csharp]": {
+      "editor.defaultFormatter": "ms-dotnettools.csharp"
     },
     "[typescript]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -48,124 +59,23 @@
   },
   "extensions": {
     "recommendations": [
+      "ms-dotnettools.csharp",
+      "ms-dotnettools.csdevkit",
       "dbaeumer.vscode-eslint",
       "esbenp.prettier-vscode",
-      "ms-vscode.vscode-typescript-next",
       "expo.vscode-expo-tools",
-      "mtxr.sqltools",
-      "mtxr.sqltools-driver-pg"
-    ]
-  },
-  "launch": {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "🖥️ Desktop: Dev",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}",
-        "runtimeExecutable": "npm",
-        "runtimeArgs": ["run", "dev"],
-        "console": "integratedTerminal"
-      },
-      {
-        "name": "🖥️ Desktop: Build",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}",
-        "runtimeExecutable": "npm",
-        "runtimeArgs": ["run", "electron:build"],
-        "console": "integratedTerminal"
-      },
-      {
-        "name": "📱 Mobile: Start",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
-        "runtimeExecutable": "npm",
-        "runtimeArgs": ["start"],
-        "console": "integratedTerminal"
-      },
-      {
-        "name": "📱 Mobile: Android",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
-        "runtimeExecutable": "npm",
-        "runtimeArgs": ["run", "android"],
-        "console": "integratedTerminal"
-      },
-      {
-        "name": "📱 Mobile: iOS",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder:📱 Mobile (React Native)}",
-        "runtimeExecutable": "npm",
-        "runtimeArgs": ["run", "ios"],
-        "console": "integratedTerminal"
-      }
-    ],
-    "compounds": [
-      {
-        "name": "🚀 All: Dev Mode",
-        "configurations": [
-          "🖥️ Desktop: Dev",
-          "📱 Mobile: Start"
-        ],
-        "presentation": {
-          "hidden": false,
-          "group": "development",
-          "order": 1
-        }
-      }
+      "mtxr.sqltools"
     ]
   },
   "tasks": {
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "🖥️ Desktop: Install Dependencies",
+        "label": "API: Run",
         "type": "shell",
-        "command": "npm install",
+        "command": "dotnet run --project src/Ordevo.Api",
         "options": {
-          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
-        },
-        "group": "build",
-        "presentation": {
-          "reveal": "always",
-          "panel": "new"
-        }
-      },
-      {
-        "label": "📱 Mobile: Install Dependencies",
-        "type": "shell",
-        "command": "npm install",
-        "options": {
-          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
-        },
-        "group": "build",
-        "presentation": {
-          "reveal": "always",
-          "panel": "new"
-        }
-      },
-      {
-        "label": "🚀 Install All Dependencies",
-        "dependsOn": [
-          "🖥️ Desktop: Install Dependencies",
-          "📱 Mobile: Install Dependencies"
-        ],
-        "group": {
-          "kind": "build",
-          "isDefault": true
-        }
-      },
-      {
-        "label": "🖥️ Desktop: Dev",
-        "type": "shell",
-        "command": "npm run dev",
-        "options": {
-          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
+          "cwd": "${workspaceFolder:Backend}"
         },
         "group": "build",
         "presentation": {
@@ -175,11 +85,77 @@
         "isBackground": true
       },
       {
-        "label": "📱 Mobile: Start",
+        "label": "Web UI: Run",
+        "type": "shell",
+        "command": "dotnet run --project .",
+        "options": {
+          "cwd": "${workspaceFolder:Web UI}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated"
+        },
+        "isBackground": true
+      },
+      {
+        "label": "Desktop WPF: Run",
+        "type": "shell",
+        "command": "dotnet run --project .",
+        "options": {
+          "cwd": "${workspaceFolder:Desktop WPF}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated"
+        }
+      },
+      {
+        "label": "Desktop WPF: Publish EXE",
+        "type": "shell",
+        "command": "dotnet publish .\\Ordevo.Desktop.Wpf.csproj -p:PublishProfile=win-x64-singlefile",
+        "options": {
+          "cwd": "${workspaceFolder:Desktop WPF}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "Database: Migrate",
+        "type": "shell",
+        "command": "./db-migrate.sh migrate",
+        "options": {
+          "cwd": "${workspaceFolder:Backend}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "Mobile: Install Dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "options": {
+          "cwd": "${workspaceFolder:Mobile}"
+        },
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "Mobile: Start",
         "type": "shell",
         "command": "npm start",
         "options": {
-          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
+          "cwd": "${workspaceFolder:Mobile}"
         },
         "group": "build",
         "presentation": {
@@ -187,33 +163,11 @@
           "panel": "dedicated"
         },
         "isBackground": true
-      },
-      {
-        "label": "🖥️ Desktop: Build",
-        "type": "shell",
-        "command": "npm run electron:build",
-        "options": {
-          "cwd": "${workspaceFolder:🖥️ Desktop (Electron)}"
-        },
-        "group": "build",
-        "presentation": {
-          "reveal": "always",
-          "panel": "new"
-        }
-      },
-      {
-        "label": "📱 Mobile: Build Android",
-        "type": "shell",
-        "command": "eas build --platform android --profile preview",
-        "options": {
-          "cwd": "${workspaceFolder:📱 Mobile (React Native)}"
-        },
-        "group": "build",
-        "presentation": {
-          "reveal": "always",
-          "panel": "new"
-        }
       }
     ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": []
   }
 }

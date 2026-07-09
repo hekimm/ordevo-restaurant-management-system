@@ -1,0 +1,51 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ordevo.Api/Ordevo.Api.csproj" />
+    <Project Path="src/Ordevo.BuildingBlocks/Ordevo.BuildingBlocks.csproj" />
+    <Project Path="src/Ordevo.Desktop.Wpf/Ordevo.Desktop.Wpf.csproj" />
+    <Project Path="src/Ordevo.Web/Ordevo.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/Ordevo.Modules.Finance.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Ordevo.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/Ordevo.Modules.Inventory.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/EInvoice/">
+    <Project Path="src/Modules/EInvoice/Ordevo.Modules.EInvoice.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Integration/">
+    <Project Path="src/Modules/Integration/Ordevo.Modules.Integration.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Kitchen/">
+    <Project Path="src/Modules/Kitchen/Ordevo.Modules.Kitchen.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/M9Crm/">
+    <Project Path="src/Modules/M9Crm/Ordevo.Modules.M9Crm.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Menu/">
+    <Project Path="src/Modules/Menu/Ordevo.Modules.Menu.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Ordering/">
+    <Project Path="src/Modules/Ordering/Ordevo.Modules.Ordering.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Payment/">
+    <Project Path="src/Modules/Payment/Ordevo.Modules.Payment.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Print/">
+    <Project Path="src/Modules/Print/Ordevo.Modules.Print.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Reporting/">
+    <Project Path="src/Modules/Reporting/Ordevo.Modules.Reporting.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Shift/">
+    <Project Path="src/Modules/Shift/Ordevo.Modules.Shift.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Sync/">
+    <Project Path="src/Modules/Sync/Ordevo.Modules.Sync.csproj" />
+  </Folder>
+</Solution>

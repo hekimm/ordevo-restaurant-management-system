@@ -1,0 +1,260 @@
+@page "/tables"
+@model Ordevo.Web.Pages.Tables.IndexModel
+@{
+    ViewData["Title"] = "Masalar";
+    ViewData["Section"] = "Satış";
+    var webOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+    var menuJson = System.Text.Json.JsonSerializer.Serialize(Model.Menu, webOpts);
+    var tablesJson = System.Text.Json.JsonSerializer.Serialize(Model.Tables, webOpts);
+    var sectionsJson = System.Text.Json.JsonSerializer.Serialize(Model.Sections, webOpts);
+    var openOrdersJson = System.Text.Json.JsonSerializer.Serialize(Model.OpenOrders, webOpts);
+    var fiscalJson = System.Text.Json.JsonSerializer.Serialize(Model.Fiscal, webOpts);
+}
+
+@Html.AntiForgeryToken()
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div id="tablesView" class="tables-shell tables-terminal">
+    <section class="tables-terminal-head">
+        <div>
+            <h2>Masalar</h2>
+            <p>Masaya tıklayarak adisyon açın veya devam edin</p>
+        </div>
+        <div class="table-head-actions">
+            <a class="tables-takeaway" asp-page="/Tables/Manage"><i class="bi bi-sliders"></i><span>CMS</span></a>
+        </div>
+    </section>
+
+    <div class="tables-section-rail" id="tablesSections"></div>
+    <div id="tablesGrid" class="tables-grid"></div>
+</div>
+
+<div id="adisyonView" class="pos-view" hidden>
+    <div class="pos3">
+        <aside class="pos-catrail-wrap">
+            <div class="pos-rail-head">
+                <strong>Menü</strong>
+                <span id="catCount">0</span>
+            </div>
+            <div class="pos-catrail" id="catRail"></div>
+        </aside>
+
+        <section class="pos-center">
+            <div class="pos-context">
+                <button class="pos-ctx-back" id="btnBackTables"><i class="bi bi-chevron-left"></i><span>Masalar</span></button>
+                <div class="pos-ctx-title">
+                    <span id="ctxTable">Masa</span>
+                    <small id="menuCount">0 ürün</small>
+                </div>
+                <div class="pos-search-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="menuSearch" placeholder="Ürün ara" autocomplete="off" />
+                </div>
+            </div>
+            <div class="pos-menu" id="menuGrid"></div>
+        </section>
+
+        <section class="pos-check">
+            <div class="pos-check-head">
+                <div>
+                    <h5 id="orderTitle">Adisyon</h5>
+                    <small id="orderSub"></small>
+                    <div class="order-flow-hint" id="orderFlowHint" hidden></div>
+                </div>
+                <span class="status-pill" id="orderStatus" hidden></span>
+            </div>
+            <div class="pos-items" id="orderItems"></div>
+            <div class="pos-check-foot" id="orderFoot" hidden>
+                <div class="pos-totals">
+                    <div class="row"><span>Ara toplam</span><span id="tSub">₺0,00</span></div>
+                    <div class="row"><span>İndirim</span><span id="tDisc">₺0,00</span></div>
+                    <div class="row"><span>KDV</span><span id="tTax">₺0,00</span></div>
+                    <div class="row total"><span>TOPLAM</span><span id="tTotal">₺0,00</span></div>
+                </div>
+                <div class="pos-actrow">
+                    <button id="btnSendKitchen"><i class="bi bi-fire"></i><span>Mutfağa</span></button>
+                    <button id="btnDiscount"><i class="bi bi-percent"></i><span>İndirim</span></button>
+                    <button id="btnReceipt"><i class="bi bi-eye"></i><span>Fiş</span></button>
+                    <button id="btnQueuePrint"><i class="bi bi-printer"></i><span>Yazdır</span></button>
+                    <button id="btnCancel" class="danger"><i class="bi bi-x-circle"></i><span>İptal</span></button>
+                </div>
+                <div class="pos-opsrow">
+                    <button id="btnTransfer"><i class="bi bi-arrow-left-right"></i><span>Masa Taşı</span></button>
+                    <button id="btnMerge"><i class="bi bi-intersect"></i><span>Birleştir</span></button>
+                    <button id="btnDetail"><i class="bi bi-list-check"></i><span>İncele / Ayır</span></button>
+                </div>
+                <button class="pos-pay" id="btnPay"><span><i class="bi bi-cash-coin"></i> Ödeme Al</span><span id="payTotalBtn">₺0,00</span></button>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="modal fade pos-pay-modal" id="payModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content pay-terminal">
+      <div class="pay-terminal-head">
+        <div>
+          <span>Tahsilat</span>
+          <h5>Ödeme Al</h5>
+          <small id="payOrderMeta">Adisyon</small>
+        </div>
+        <button type="button" class="pay-close" data-bs-dismiss="modal" aria-label="Kapat"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="pay-terminal-body">
+        <section class="pay-summary-panel">
+          <div class="pay-order-card">
+            <div>
+              <small>Adisyon</small>
+              <strong id="payOrderTitle">#--</strong>
+            </div>
+            <span id="payOrderType">Masa</span>
+          </div>
+          <div class="pay-line-list" id="payLineList"></div>
+          <div class="pay-total-stack">
+            <div><span>Ara toplam</span><strong id="paySub">₺0,00</strong></div>
+            <div><span>İndirim</span><strong id="payDiscount">₺0,00</strong></div>
+            <div><span>KDV</span><strong id="payTax">₺0,00</strong></div>
+            <div class="grand"><span>Toplam</span><strong id="payGrand">₺0,00</strong></div>
+          </div>
+        </section>
+
+        <section class="pay-tender-panel">
+          <div class="pay-due">Kalan tutar<strong id="payDue">₺0,00</strong></div>
+
+          <div class="pay-methods" role="radiogroup" aria-label="Ödeme yöntemi">
+            <input type="radio" class="btn-check" name="pm" id="pmCash" value="cash" checked>
+            <label class="pay-method" for="pmCash"><i class="bi bi-cash-stack"></i><span>Nakit</span></label>
+            <input type="radio" class="btn-check" name="pm" id="pmCard" value="card">
+            <label class="pay-method" for="pmCard"><i class="bi bi-credit-card-2-front"></i><span>Kart</span></label>
+            <input type="radio" class="btn-check" name="pm" id="pmMeal" value="meal_voucher">
+            <label class="pay-method" for="pmMeal"><i class="bi bi-ticket-perforated"></i><span>Yemek Kartı</span></label>
+          </div>
+
+          <div class="pay-terminal-select" id="payTerminalWrap" hidden>
+            <label for="payTerminal">POS cihazı</label>
+            <select id="payTerminal"></select>
+            <small id="payTerminalHint"></small>
+          </div>
+
+          <div class="pay-entry">
+            <label for="payAmount">Alınacak tutar</label>
+            <div class="pay-amount-field">
+              <span>₺</span>
+              <input type="text" inputmode="decimal" autocomplete="off" id="payAmount" />
+            </div>
+            <div class="pay-balance-row">
+              <span>Alınan <strong id="payEntered">₺0,00</strong></span>
+              <span>Para üstü <strong id="payChange">₺0,00</strong></span>
+            </div>
+          </div>
+
+          <div class="pay-quick" id="payQuick"></div>
+          <div class="pay-keypad" id="payKeypad">
+            <button type="button" data-key="7">7</button>
+            <button type="button" data-key="8">8</button>
+            <button type="button" data-key="9">9</button>
+            <button type="button" data-key="back"><i class="bi bi-backspace"></i></button>
+            <button type="button" data-key="4">4</button>
+            <button type="button" data-key="5">5</button>
+            <button type="button" data-key="6">6</button>
+            <button type="button" data-key="clear">C</button>
+            <button type="button" data-key="1">1</button>
+            <button type="button" data-key="2">2</button>
+            <button type="button" data-key="3">3</button>
+            <button type="button" data-key="exact">Tam</button>
+            <button type="button" data-key="0">0</button>
+            <button type="button" data-key="00">00</button>
+            <button type="button" data-key=",">,</button>
+            <button type="button" class="confirm" id="payConfirm"><i class="bi bi-check2-circle"></i> Kaydet</button>
+          </div>
+        </section>
+      </div>
+      <div class="pay-terminal-foot">
+        <div class="pay-progress" id="payProgress" hidden>
+          <i class="bi bi-broadcast-pin"></i>
+          <span>POS cihazından yanıt bekleniyor</span>
+        </div>
+        <button type="button" class="pay-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Vazgeç</button>
+        <button type="button" class="pay-secondary" id="payExactBtn"><i class="bi bi-bullseye"></i> Kalanı Al</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="receiptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Hesap Fişi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><pre id="receiptText" class="receipt-pre"></pre></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Yazdır</button>
+      </div>
+    </div>
+	  </div>
+	</div>
+
+<div class="modal fade" id="transferModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Masa Taşı</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label">Hedef masa</label>
+        <select class="form-select form-select-lg" id="transferTableSelect"></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        <button class="btn btn-primary" id="transferConfirm"><i class="bi bi-arrow-left-right"></i> Taşı</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="mergeModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Hesap Birleştir</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label">Bu adisyona eklenecek hesap</label>
+        <select class="form-select form-select-lg" id="mergeOrderSelect"></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        <button class="btn btn-primary" id="mergeConfirm"><i class="bi bi-intersect"></i> Birleştir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Adisyon İnce İşlemleri</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="detail-summary" id="detailSummary"></div>
+        <div class="detail-items" id="detailItems"></div>
+      </div>
+      <div class="modal-footer detail-splitbar">
+        <select class="form-select" id="splitTableSelect"></select>
+        <button class="btn btn-primary" id="splitConfirm"><i class="bi bi-scissors"></i> Seçili Kalemleri Ayır</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  window.POS_DATA = {
+    menu: @Html.Raw(menuJson),
+	    tables: @Html.Raw(tablesJson),
+	    sections: @Html.Raw(sectionsJson),
+	    openOrders: @Html.Raw(openOrdersJson),
+	    fiscal: @Html.Raw(fiscalJson)
+	  };
+</script>
+<script src="~/js/pos.js" asp-append-version="true"></script>
+}

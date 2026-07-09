@@ -1,0 +1,200 @@
+@page "/personel-cihaz"
+@model Ordevo.Web.Pages.Shift.IndexModel
+@{
+    ViewData["Title"] = "Personel - Cihaz";
+    ViewData["Section"] = "Yönetim";
+
+    var waiters = Model.Waiters.ToList();
+    var activeCount = waiters.Count(x => x.IsActive);
+    var passiveCount = waiters.Count - activeCount;
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="admin-page ops-admin staff-admin">
+    <header class="admin-title">
+        <div>
+            <h2>Personel - Cihaz Yönetimi</h2>
+            <p>Garson mobil erişimi, PIN ve cihaz yetkilerini yönetin</p>
+        </div>
+        <div class="admin-title-actions">
+            <a class="btn btn-sm btn-getir" href="#waiter-add"><i class="bi bi-person-plus"></i><span>Garson Ekle</span></a>
+            <a class="btn btn-sm btn-getir" href="#waiter-list"><i class="bi bi-phone"></i><span>Mobil Erişim</span></a>
+        </div>
+    </header>
+
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <span>Toplam Garson</span>
+            <strong>@waiters.Count</strong>
+            <small>personel kaydı</small>
+        </div>
+        <div class="admin-stat-card good">
+            <span>Mobil Yetkili</span>
+            <strong>@activeCount</strong>
+            <small>aktif PIN</small>
+        </div>
+        <div class="admin-stat-card warn">
+            <span>Bekleyen</span>
+            <strong>@passiveCount</strong>
+            <small>pasif erişim</small>
+        </div>
+        <div class="admin-stat-card cash">
+            <span>Cihaz Profili</span>
+            <strong>@activeCount</strong>
+            <small>mobil atamaya hazır</small>
+        </div>
+    </div>
+
+    <div class="admin-layout staff-main">
+        <section id="waiter-list" class="admin-card">
+            <div class="admin-card-head staff-card-head">
+                <div>
+                    <h3>Garsonlar</h3>
+                    <span class="admin-count">@waiters.Count kayıt</span>
+                </div>
+                <div class="staff-filter">
+                    <input class="form-control form-control-sm" type="search" placeholder="Ara" data-list-filter=".staff-row" />
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Durum filtresi">
+                        <button type="button" class="btn btn-outline-secondary active" data-status-filter=".staff-row" data-filter-value="all">Tümü</button>
+                        <button type="button" class="btn btn-outline-secondary" data-status-filter=".staff-row" data-filter-value="active">Aktif</button>
+                        <button type="button" class="btn btn-outline-secondary" data-status-filter=".staff-row" data-filter-value="passive">Pasif</button>
+                    </div>
+                </div>
+            </div>
+
+            <details id="waiter-add" class="admin-add staff-add" open>
+                <summary><i class="bi bi-person-plus"></i><span>Garson ekle</span></summary>
+                <form method="post" asp-page-handler="CreateWaiter" class="admin-form staff-create-form mt-2">
+                    <div>
+                        <label class="form-label">Garson adı</label>
+                        <input class="form-control form-control-sm" asp-for="Waiter.FullName" placeholder="Ad Soyad" autocomplete="off" />
+                    </div>
+                    <div>
+                        <label class="form-label">6 haneli PIN</label>
+                        <input class="form-control form-control-sm staff-pin-input" asp-for="Waiter.Pin" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="new-password" />
+                    </div>
+                    <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table staff-table">
+                    <thead>
+                        <tr>
+                            <th>Personel</th>
+                            <th>Rol</th>
+                            <th>Mobil</th>
+                            <th>Cihaz</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (waiters.Count == 0)
+                        {
+                            <tr><td colspan="5" class="admin-empty">Garson kaydı yok</td></tr>
+                        }
+                        @foreach (var waiter in waiters)
+                        {
+                            var status = waiter.IsActive ? "active" : "passive";
+                            <tr class="staff-row @(!waiter.IsActive ? "muted" : "")" data-status="@status" data-filter-text="@waiter.FullName">
+                                <td>
+                                    <div class="staff-person">
+                                        <span class="staff-avatar">@Initials(waiter.FullName)</span>
+                                        <div>
+                                            <strong>@waiter.FullName</strong>
+                                            <small>@(waiter.IsActive ? "mobil giriş açık" : "mobil giriş kapalı")</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="admin-badge">Garson</span></td>
+                                <td><span class="admin-badge @(waiter.IsActive ? "ok" : "off")">@(waiter.IsActive ? "Aktif" : "Pasif")</span></td>
+                                <td>
+                                    <span class="staff-device-chip @(waiter.IsActive ? "ready" : "locked")">
+                                        <i class="bi @(waiter.IsActive ? "bi-phone" : "bi-phone-x")"></i>
+                                        <span>@(waiter.IsActive ? "Yetkili" : "Kilitli")</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="UpdateWaiter" asp-route-id="@waiter.Id" class="admin-popover-form">
+                                                <strong>Personel düzenle</strong>
+                                                <input class="form-control form-control-sm" name="Staff.FullName" value="@waiter.FullName" placeholder="Ad Soyad" />
+                                                <label class="form-check">
+                                                    <input type="hidden" name="Staff.IsActive" value="false" />
+                                                    <input class="form-check-input" type="checkbox" name="Staff.IsActive" value="true" checked="@waiter.IsActive" />
+                                                    <span class="form-check-label">Mobil erişim aktif</span>
+                                                </label>
+                                                <button class="btn btn-sm btn-getir" type="submit" data-confirm="Personel bilgileri güncellensin mi?"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+
+                                        <details class="admin-row-editor">
+                                            <summary title="PIN yenile"><i class="bi bi-key"></i></summary>
+                                            <form method="post" asp-page-handler="ResetPin" asp-route-id="@waiter.Id" class="admin-popover-form">
+                                                <strong>PIN yenile</strong>
+                                                <input class="form-control form-control-sm staff-pin-input" name="Pin.Pin" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="new-password" />
+                                                <button class="btn btn-sm btn-getir" type="submit" data-confirm="Mobil PIN yenilensin mi?"><i class="bi bi-shield-check"></i><span>Yenile</span></button>
+                                            </form>
+                                        </details>
+
+                                        @if (waiter.IsActive)
+                                        {
+                                            <form method="post" asp-page-handler="DeactivateWaiter" asp-route-id="@waiter.Id">
+                                                <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Garson mobil erişimi pasifleştirilsin mi?" title="Pasifleştir"><i class="bi bi-slash-circle"></i></button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form method="post" asp-page-handler="UpdateWaiter" asp-route-id="@waiter.Id">
+                                                <input type="hidden" name="Staff.FullName" value="@waiter.FullName" />
+                                                <input type="hidden" name="Staff.IsActive" value="true" />
+                                                <button class="btn btn-sm btn-light-icon" type="submit" data-confirm="Garson mobil erişimi aktifleştirilsin mi?" title="Aktifleştir"><i class="bi bi-check-circle"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="admin-card staff-device-panel">
+            <div class="admin-card-head">
+                <h3>Mobil Cihaz Yetkileri</h3>
+                <span class="admin-count">@activeCount aktif</span>
+            </div>
+            <div class="staff-device-list">
+                @foreach (var waiter in waiters)
+                {
+                    <article class="staff-device-row @(!waiter.IsActive ? "locked" : "")">
+                        <span class="staff-device-icon"><i class="bi @(waiter.IsActive ? "bi-phone" : "bi-phone-x")"></i></span>
+                        <div>
+                            <strong>@waiter.FullName</strong>
+                            <small>@(waiter.IsActive ? "Mobil uygulama erişimi açık" : "Erişim pasif")</small>
+                        </div>
+                        <span class="admin-badge @(waiter.IsActive ? "ok" : "off")">@(waiter.IsActive ? "Hazır" : "Kapalı")</span>
+                    </article>
+                }
+                @if (waiters.Count == 0)
+                {
+                    <div class="admin-empty">Mobil yetki kaydı yok</div>
+                }
+            </div>
+        </aside>
+    </div>
+</div>
+
+@functions {
+    private static string Initials(string value)
+    {
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+            return "?";
+
+        return string.Concat(parts.Take(2).Select(x => char.ToUpperInvariant(x[0])));
+    }
+}

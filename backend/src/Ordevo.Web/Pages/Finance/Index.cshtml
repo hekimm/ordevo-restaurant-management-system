@@ -1,0 +1,434 @@
+@page "/finance"
+@using System.Globalization
+@model Ordevo.Web.Pages.Finance.IndexModel
+@{
+    ViewData["Title"] = "Finans";
+    ViewData["Section"] = "Gelir / Gider";
+
+    var summary = Model.Summary;
+    var transactions = Model.Transactions
+        .OrderByDescending(x => x.BusinessDate)
+        .ThenByDescending(x => x.CreatedAt)
+        .ToList();
+    var accounts = Model.Accounts.OrderBy(x => x.Name).ToList();
+    var counterparties = Model.Counterparties.OrderBy(x => x.Name).ToList();
+    var totalExpense = (summary?.Expenses ?? 0) + (summary?.PurchaseCosts ?? 0);
+    var currentBalance = (summary?.Receivables ?? 0) - (summary?.Payables ?? 0);
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="admin-page ops-admin finance-admin">
+    <header class="admin-title">
+        <div>
+            <h2>Finans Yönetimi</h2>
+            <p>Gelir, gider, nakit akışı, hesap ve cari kayıtlarını yönetin</p>
+        </div>
+        <form method="get" class="admin-filter finance-filter">
+            <input type="date" class="form-control form-control-sm" asp-for="Start" />
+            <input type="date" class="form-control form-control-sm" asp-for="End" />
+            <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-funnel"></i><span>Filtrele</span></button>
+        </form>
+    </header>
+
+    <div class="admin-stat-grid finance-stats">
+        <div class="admin-stat-card good">
+            <span>Satış</span>
+            <strong>@UiFormat.Money(summary?.SalesRevenue ?? 0)</strong>
+            <small>@Model.Start - @Model.End</small>
+        </div>
+        <div class="admin-stat-card">
+            <span>Diğer Gelir</span>
+            <strong>@UiFormat.Money(summary?.OtherIncome ?? 0)</strong>
+            <small>manuel tahsilat</small>
+        </div>
+        <div class="admin-stat-card danger">
+            <span>Gider</span>
+            <strong>@UiFormat.Money(totalExpense)</strong>
+            <small>operasyon + satın alma</small>
+        </div>
+        <div class="admin-stat-card warn">
+            <span>Cari</span>
+            <strong>@UiFormat.Money(currentBalance)</strong>
+            <small>alacak - borç</small>
+        </div>
+        <div class="admin-stat-card cash">
+            <span>Net</span>
+            <strong>@UiFormat.Money(summary?.NetProfit ?? 0)</strong>
+            <small>karlılık</small>
+        </div>
+    </div>
+
+    <div class="admin-layout finance-main">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Gelir / Gider Kaydı</h3>
+                <span class="admin-count">@transactions.Count hareket</span>
+            </div>
+            <form method="post" asp-page-handler="Transaction" class="admin-form">
+                <input type="hidden" asp-for="Start" />
+                <input type="hidden" asp-for="End" />
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <select class="form-select form-select-sm" asp-for="Transaction.TransactionType">
+                            <option value="expense">Gider</option>
+                            <option value="income">Gelir</option>
+                            <option value="adjustment">Düzeltme</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select form-select-sm" asp-for="Transaction.Method">
+                            @foreach (var method in Methods)
+                            {
+                                <option value="@method">@MethodLabel(method)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4"><input type="date" class="form-control form-control-sm" asp-for="Transaction.BusinessDate" /></div>
+                    <div class="col-md-6"><input class="form-control form-control-sm" asp-for="Transaction.Category" placeholder="Kategori" /></div>
+                    <div class="col-md-3"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Transaction.Amount" placeholder="Tutar" /></div>
+                    <div class="col-md-3"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Transaction.TaxAmount" placeholder="Vergi" /></div>
+                    <div class="col-md-6">
+                        <select class="form-select form-select-sm" asp-for="Transaction.AccountId">
+                            <option value="">Hesap seçilmedi</option>
+                            @foreach (var account in accounts.Where(x => x.IsActive))
+                            {
+                                <option value="@account.Id">@account.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select form-select-sm" asp-for="Transaction.CounterpartyId">
+                            <option value="">Cari seçilmedi</option>
+                            @foreach (var counterparty in counterparties.Where(x => x.IsActive))
+                            {
+                                <option value="@counterparty.Id">@counterparty.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12"><input class="form-control form-control-sm" asp-for="Transaction.Description" placeholder="Açıklama" /></div>
+                </div>
+                <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+            </form>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Nakit Akışı</h3>
+                <span class="admin-count">@Model.Cashflow.Count gün</span>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table compact">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Gelir</th>
+                            <th>Gider</th>
+                            <th>Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Cashflow.Count == 0)
+                    {
+                        <tr><td colspan="4" class="admin-empty">Nakit akışı yok</td></tr>
+                    }
+                    @foreach (var row in Model.Cashflow)
+                    {
+                        <tr>
+                            <td><strong>@row.BusinessDate</strong></td>
+                            <td>@UiFormat.Money(row.Income)</td>
+                            <td>@UiFormat.Money(row.Expense)</td>
+                            <td><span class="admin-badge @(row.Net < 0 ? "warn" : "ok")">@UiFormat.Money(row.Net)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="admin-layout finance-bookkeeping">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Son Hareketler</h3>
+                <span class="admin-count">@transactions.Count kayıt</span>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Tip</th>
+                            <th>Kategori</th>
+                            <th>Yöntem</th>
+                            <th>Tutar</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (transactions.Count == 0)
+                    {
+                        <tr><td colspan="6" class="admin-empty">Finans hareketi yok</td></tr>
+                    }
+                    @foreach (var tx in transactions.Take(24))
+                    {
+                        <tr class="@(tx.IsVoided ? "muted" : "")">
+                            <td>
+                                <strong>@tx.BusinessDate.ToString("dd.MM.yyyy")</strong>
+                                <small>@(tx.SourceModule ?? "finance")</small>
+                            </td>
+                            <td><span class="admin-badge @TransactionClass(tx)">@TransactionLabel(tx.TransactionType, tx.IsVoided)</span></td>
+                            <td>@tx.Category</td>
+                            <td>@MethodLabel(tx.Method)</td>
+                            <td>@UiFormat.Money(tx.Amount)</td>
+                            <td>
+                                <div class="admin-row-actions">
+                                    @if (!tx.IsVoided && tx.SourceModule == "finance")
+                                    {
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="Transaction" class="admin-popover-form wide">
+                                                <input type="hidden" asp-for="Start" />
+                                                <input type="hidden" asp-for="End" />
+                                                <input type="hidden" name="Transaction.Id" value="@tx.Id" />
+                                                <select class="form-select form-select-sm" name="Transaction.TransactionType">
+                                                    <option value="income" selected="@(tx.TransactionType == "income")">Gelir</option>
+                                                    <option value="expense" selected="@(tx.TransactionType == "expense")">Gider</option>
+                                                    <option value="adjustment" selected="@(tx.TransactionType == "adjustment")">Düzeltme</option>
+                                                </select>
+                                                <input class="form-control form-control-sm" name="Transaction.Category" value="@tx.Category" placeholder="Kategori" />
+                                                <select class="form-select form-select-sm" name="Transaction.Method">
+                                                    @foreach (var method in Methods)
+                                                    {
+                                                        <option value="@method" selected="@(tx.Method == method)">@MethodLabel(method)</option>
+                                                    }
+                                                </select>
+                                                <input type="date" class="form-control form-control-sm" name="Transaction.BusinessDate" value="@tx.BusinessDate.ToString("yyyy-MM-dd")" />
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Transaction.Amount" value="@tx.Amount.ToString(CultureInfo.InvariantCulture)" />
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Transaction.TaxAmount" value="@tx.TaxAmount.ToString(CultureInfo.InvariantCulture)" />
+                                                <select class="form-select form-select-sm" name="Transaction.AccountId">
+                                                    <option value="">Hesap seçilmedi</option>
+                                                    @foreach (var account in accounts)
+                                                    {
+                                                        <option value="@account.Id" selected="@(tx.AccountId == account.Id)">@account.Name</option>
+                                                    }
+                                                </select>
+                                                <select class="form-select form-select-sm" name="Transaction.CounterpartyId">
+                                                    <option value="">Cari seçilmedi</option>
+                                                    @foreach (var counterparty in counterparties)
+                                                    {
+                                                        <option value="@counterparty.Id" selected="@(tx.CounterpartyId == counterparty.Id)">@counterparty.Name</option>
+                                                    }
+                                                </select>
+                                                <input class="form-control form-control-sm" name="Transaction.Description" value="@tx.Description" placeholder="Açıklama" />
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+                                        <form method="post" asp-page-handler="VoidTransaction" asp-route-id="@tx.Id">
+                                            <input type="hidden" asp-for="Start" />
+                                            <input type="hidden" asp-for="End" />
+                                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Hareket iptal edilsin mi?" title="İptal"><i class="bi bi-slash-circle"></i></button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="admin-badge off">Sistem</span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Hesaplar ve Cariler</h3>
+                <span class="admin-count">@accounts.Count / @counterparties.Count</span>
+            </div>
+
+            <div class="admin-split-forms">
+                <details class="admin-add">
+                    <summary><i class="bi bi-plus-lg"></i><span>Hesap ekle</span></summary>
+                    <form method="post" asp-page-handler="Account" class="admin-form mt-2">
+                        <input type="hidden" asp-for="Start" />
+                        <input type="hidden" asp-for="End" />
+                        <input type="hidden" asp-for="Account.IsActive" value="true" />
+                        <input class="form-control form-control-sm" asp-for="Account.Name" placeholder="Hesap adı" />
+                        <div class="row g-2 mt-1">
+                            <div class="col-7">
+                                <select class="form-select form-select-sm" asp-for="Account.AccountType">
+                                    @foreach (var type in AccountTypes)
+                                    {
+                                        <option value="@type">@AccountTypeLabel(type)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-5"><input class="form-control form-control-sm" asp-for="Account.Currency" maxlength="3" placeholder="TRY" /></div>
+                        </div>
+                        <input type="number" step="0.01" class="form-control form-control-sm mt-2" asp-for="Account.OpeningBalance" placeholder="Açılış bakiyesi" />
+                        <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                    </form>
+                </details>
+
+                <details class="admin-add">
+                    <summary><i class="bi bi-plus-lg"></i><span>Cari ekle</span></summary>
+                    <form method="post" asp-page-handler="Counterparty" class="admin-form mt-2">
+                        <input type="hidden" asp-for="Start" />
+                        <input type="hidden" asp-for="End" />
+                        <input type="hidden" asp-for="Counterparty.IsActive" value="true" />
+                        <input class="form-control form-control-sm" asp-for="Counterparty.Name" placeholder="Cari adı" />
+                        <select class="form-select form-select-sm mt-2" asp-for="Counterparty.CounterpartyType">
+                            @foreach (var type in CounterpartyTypes)
+                            {
+                                <option value="@type">@CounterpartyTypeLabel(type)</option>
+                            }
+                        </select>
+                        <div class="row g-2 mt-1">
+                            <div class="col-6"><input class="form-control form-control-sm" asp-for="Counterparty.Phone" placeholder="Telefon" /></div>
+                            <div class="col-6"><input class="form-control form-control-sm" asp-for="Counterparty.TaxNo" placeholder="Vergi no" /></div>
+                        </div>
+                        <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                    </form>
+                </details>
+            </div>
+
+            <div class="finance-ledger-list">
+                @foreach (var account in accounts)
+                {
+                    <article class="finance-ledger-row @(!account.IsActive ? "muted" : "")">
+                        <div>
+                            <strong>@account.Name</strong>
+                            <small>@AccountTypeLabel(account.AccountType) · @account.Currency · @UiFormat.Money(account.OpeningBalance)</small>
+                        </div>
+                        <span class="admin-badge @(account.IsActive ? "ok" : "off")">@(account.IsActive ? "Aktif" : "Pasif")</span>
+                        <div class="admin-row-actions">
+                            <details class="admin-row-editor">
+                                <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                <form method="post" asp-page-handler="Account" class="admin-popover-form wide">
+                                    <input type="hidden" asp-for="Start" />
+                                    <input type="hidden" asp-for="End" />
+                                    <input type="hidden" name="Account.Id" value="@account.Id" />
+                                    <input class="form-control form-control-sm" name="Account.Name" value="@account.Name" placeholder="Ad" />
+                                    <select class="form-select form-select-sm" name="Account.AccountType">
+                                        @foreach (var type in AccountTypes)
+                                        {
+                                            <option value="@type" selected="@(account.AccountType == type)">@AccountTypeLabel(type)</option>
+                                        }
+                                    </select>
+                                    <input class="form-control form-control-sm" name="Account.Currency" value="@account.Currency" maxlength="3" />
+                                    <input type="number" step="0.01" class="form-control form-control-sm" name="Account.OpeningBalance" value="@account.OpeningBalance.ToString(CultureInfo.InvariantCulture)" />
+                                    <label class="form-check">
+                                        <input type="hidden" name="Account.IsActive" value="false" />
+                                        <input class="form-check-input" type="checkbox" name="Account.IsActive" value="true" checked="@account.IsActive" />
+                                        <span class="form-check-label">Aktif</span>
+                                    </label>
+                                    <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                </form>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteAccount" asp-route-id="@account.Id">
+                                <input type="hidden" asp-for="Start" />
+                                <input type="hidden" asp-for="End" />
+                                <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Hesap pasifleştirilsin mi?" title="Pasifleştir"><i class="bi bi-slash-circle"></i></button>
+                            </form>
+                        </div>
+                    </article>
+                }
+
+                @foreach (var cp in counterparties)
+                {
+                    <article class="finance-ledger-row @(!cp.IsActive ? "muted" : "")">
+                        <div>
+                            <strong>@cp.Name</strong>
+                            <small>@CounterpartyTypeLabel(cp.CounterpartyType) · @(cp.Phone ?? cp.TaxNo ?? "-")</small>
+                        </div>
+                        <span class="admin-badge @(cp.IsActive ? "ok" : "off")">@(cp.IsActive ? "Aktif" : "Pasif")</span>
+                        <div class="admin-row-actions">
+                            <details class="admin-row-editor">
+                                <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                <form method="post" asp-page-handler="Counterparty" class="admin-popover-form wide">
+                                    <input type="hidden" asp-for="Start" />
+                                    <input type="hidden" asp-for="End" />
+                                    <input type="hidden" name="Counterparty.Id" value="@cp.Id" />
+                                    <input type="hidden" name="Counterparty.RefId" value="@cp.RefId" />
+                                    <input class="form-control form-control-sm" name="Counterparty.Name" value="@cp.Name" placeholder="Ad" />
+                                    <select class="form-select form-select-sm" name="Counterparty.CounterpartyType">
+                                        @foreach (var type in CounterpartyTypes)
+                                        {
+                                            <option value="@type" selected="@(cp.CounterpartyType == type)">@CounterpartyTypeLabel(type)</option>
+                                        }
+                                    </select>
+                                    <input class="form-control form-control-sm" name="Counterparty.Phone" value="@cp.Phone" placeholder="Telefon" />
+                                    <input class="form-control form-control-sm" name="Counterparty.Email" value="@cp.Email" placeholder="E-posta" />
+                                    <input class="form-control form-control-sm" name="Counterparty.TaxNo" value="@cp.TaxNo" placeholder="Vergi no" />
+                                    <label class="form-check">
+                                        <input type="hidden" name="Counterparty.IsActive" value="false" />
+                                        <input class="form-check-input" type="checkbox" name="Counterparty.IsActive" value="true" checked="@cp.IsActive" />
+                                        <span class="form-check-label">Aktif</span>
+                                    </label>
+                                    <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                </form>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteCounterparty" asp-route-id="@cp.Id">
+                                <input type="hidden" asp-for="Start" />
+                                <input type="hidden" asp-for="End" />
+                                <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Cari pasifleştirilsin mi?" title="Pasifleştir"><i class="bi bi-slash-circle"></i></button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+@functions {
+    private static readonly string[] Methods = ["cash", "card", "bank", "online", "meal_voucher", "on_account", "other"];
+    private static readonly string[] AccountTypes = ["cash", "bank", "card", "online", "supplier", "customer", "other"];
+    private static readonly string[] CounterpartyTypes = ["supplier", "customer", "staff", "other"];
+
+    private static string MethodLabel(string method) => method switch
+    {
+        "cash" => "Nakit",
+        "card" => "Kart",
+        "bank" => "Banka",
+        "online" => "Online",
+        "meal_voucher" => "Yemek kartı",
+        "on_account" => "Cari",
+        "other" => "Diğer",
+        _ => method
+    };
+
+    private static string TransactionLabel(string type, bool isVoided) => isVoided ? "İptal" : type switch
+    {
+        "income" => "Gelir",
+        "expense" => "Gider",
+        "adjustment" => "Düzeltme",
+        _ => type
+    };
+
+    private static string TransactionClass(FinanceTransactionDto tx) =>
+        tx.IsVoided ? "off" : tx.TransactionType == "expense" ? "warn" : tx.TransactionType == "income" ? "ok" : "";
+
+    private static string AccountTypeLabel(string type) => type switch
+    {
+        "cash" => "Nakit",
+        "bank" => "Banka",
+        "card" => "Kart",
+        "online" => "Online",
+        "supplier" => "Tedarikçi",
+        "customer" => "Müşteri",
+        "other" => "Diğer",
+        _ => type
+    };
+
+    private static string CounterpartyTypeLabel(string type) => type switch
+    {
+        "supplier" => "Tedarikçi",
+        "customer" => "Müşteri",
+        "staff" => "Personel",
+        "other" => "Diğer",
+        _ => type
+    };
+}

@@ -1,0 +1,11 @@
+@page "/error"
+@model ErrorModel
+@{
+    ViewData["Title"] = "Hata";
+    ViewData["Section"] = "Sistem";
+}
+<div class="empty-state">
+    <i class="bi bi-exclamation-triangle"></i>
+    <h2>İşlem tamamlanamadı</h2>
+    <p>Beklenmeyen bir durum oluştu. Destek kodu: @Model.RequestId</p>
+</div>

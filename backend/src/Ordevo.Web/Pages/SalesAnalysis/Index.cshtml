@@ -1,0 +1,230 @@
+@page "/sales-analysis"
+@model Ordevo.Web.Pages.SalesAnalysis.IndexModel
+@{
+    ViewData["Title"] = "Satış Analizi";
+    ViewData["Section"] = "Raporlama";
+    var tr = new System.Globalization.CultureInfo("tr-TR");
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string PayLabel(string m) => m switch { "cash" => "Nakit", "card" => "Kart", "meal_voucher" => "Yemek Kartı", "on_account" => "Cari", _ => m };
+    string Width(decimal value, decimal max) => max <= 0 ? "0" : Math.Clamp((double)(value / max * 100), 0, 100).ToString("0.##", inv);
+    string Share(decimal value, decimal total) => total <= 0 ? "0" : Math.Clamp((double)(value / total * 100), 0, 100).ToString("0", inv);
+    string ShortMoney(decimal value) => value >= 1000 ? $"{(value / 1000).ToString("0.#", tr)}K" : UiFormat.Money(value);
+
+    var days = Model.DailySummaries.OrderBy(d => d.BusinessDate).ToList();
+    var latestDays = Model.DailySummaries.OrderByDescending(x => x.BusinessDate).Take(10).ToList();
+    var maxDaily = days.Count == 0 ? 0 : days.Max(d => d.Revenue);
+    var maxHourly = Model.Hourly.Count == 0 ? 0 : Model.Hourly.Max(h => h.Revenue);
+    var maxPay = Model.PaymentMethods.Count == 0 ? 0 : Model.PaymentMethods.Max(p => p.Amount);
+    var maxCategory = Model.CategorySales.Count == 0 ? 0 : Model.CategorySales.Max(c => c.Revenue);
+    var maxTop = Model.TopItems.Count == 0 ? 0 : Model.TopItems.Max(t => t.Revenue);
+    var bestDay = Model.DailySummaries.OrderByDescending(x => x.Revenue).FirstOrDefault();
+    var bestHour = Model.Hourly.OrderByDescending(x => x.Revenue).FirstOrDefault();
+    var discountRate = Share(Model.PeriodDiscount, Model.PeriodRevenue + Model.PeriodDiscount);
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="ops-analysis">
+    <aside class="analysis-rail">
+        <div class="analysis-rail-brand">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <div>
+                <strong>Performansım</strong>
+                <span>@Model.Start.ToString("dd MMM", tr) - @Model.End.ToString("dd MMM", tr)</span>
+            </div>
+        </div>
+        <nav class="analysis-rail-nav" aria-label="Analiz bölümleri">
+            <a href="#orders" class="active"><i class="bi bi-receipt"></i><span>Sipariş</span></a>
+            <a href="#payments"><i class="bi bi-credit-card"></i><span>Ödeme</span></a>
+            <a href="#products"><i class="bi bi-bag-check"></i><span>Ürün</span></a>
+            <a href="#hours"><i class="bi bi-clock-history"></i><span>Saat</span></a>
+        </nav>
+        <div class="rail-support">
+            <small>Bugün</small>
+            <strong>@(Model.Daily?.OrderCount ?? 0) sipariş</strong>
+            <span>@ShortMoney(Model.Daily?.Revenue ?? 0)</span>
+        </div>
+    </aside>
+
+    <main class="analysis-workspace">
+        <section class="analysis-toolbar">
+            <div>
+                <h2>Satış operasyonu</h2>
+                <p>@Model.Start.ToString("dd MMMM yyyy", tr) - @Model.End.ToString("dd MMMM yyyy", tr)</p>
+            </div>
+            <form method="get" class="analysis-filter compact">
+                <label>
+                    <span>Başlangıç</span>
+                    <input type="date" name="start" value="@Model.Start.ToString("yyyy-MM-dd")" />
+                </label>
+                <label>
+                    <span>Bitiş</span>
+                    <input type="date" name="end" value="@Model.End.ToString("yyyy-MM-dd")" />
+                </label>
+                <button type="submit"><i class="bi bi-funnel-fill"></i><span>Uygula</span></button>
+            </form>
+        </section>
+
+        <section class="analysis-scoreboard" id="orders">
+            <article class="score-card primary">
+                <small>Dönem ciro</small>
+                <strong>@UiFormat.Money(Model.PeriodRevenue)</strong>
+                <span>@Model.PeriodOrders adisyon</span>
+            </article>
+            <article class="score-card">
+                <small>Ortalama sepet</small>
+                <strong>@UiFormat.Money(Model.PeriodAvgTicket)</strong>
+                <span>@(bestDay is null ? "-" : DateTime.Parse(bestDay.BusinessDate).ToString("dd MMM ddd", tr))</span>
+            </article>
+            <article class="score-card">
+                <small>İndirim oranı</small>
+                <strong>%@discountRate</strong>
+                <span>@UiFormat.Money(Model.PeriodDiscount)</span>
+            </article>
+            <article class="score-card">
+                <small>En yoğun saat</small>
+                <strong>@(bestHour is null ? "--:--" : $"{bestHour.Hour:00}:00")</strong>
+                <span>@(bestHour?.OrderCount ?? 0) adisyon</span>
+            </article>
+        </section>
+
+        <section class="analysis-board">
+            <article class="ops-card trend-card">
+                <div class="ops-card-head">
+                    <div>
+                        <h3>Günlük satış</h3>
+                        <span>@days.Count gün</span>
+                    </div>
+                    <strong>@ShortMoney(maxDaily)</strong>
+                </div>
+                <div class="sales-bars" aria-label="Günlük satış grafiği">
+                    @foreach (var day in days)
+                    {
+                        var dt = DateTime.Parse(day.BusinessDate);
+                        <div class="sales-day" title="@dt.ToString("dd MMMM dddd", tr) · @UiFormat.Money(day.Revenue)">
+                            <span class="bar-value">@ShortMoney(day.Revenue)</span>
+                            <i style="height:@Width(day.Revenue, maxDaily)%"></i>
+                            <em>@dt.ToString("dd", tr)</em>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <aside class="analysis-side-stack">
+                <article class="ops-card" id="payments">
+                    <div class="ops-card-head">
+                        <div>
+                            <h3>Ödeme dağılımı</h3>
+                            <span>@Model.PaymentMethods.Sum(x => x.Count) işlem</span>
+                        </div>
+                    </div>
+                    <div class="payment-list">
+                        @foreach (var p in Model.PaymentMethods.OrderByDescending(x => x.Amount))
+                        {
+                            <div class="payment-row">
+                                <div>
+                                    <strong>@PayLabel(p.Method)</strong>
+                                    <small>@p.Count işlem · %@Share(p.Amount, Model.PeriodRevenue)</small>
+                                </div>
+                                <em>@UiFormat.Money(p.Amount)</em>
+                                <span><i style="width:@Width(p.Amount, maxPay)%"></i></span>
+                            </div>
+                        }
+                    </div>
+                </article>
+
+                <article class="ops-card">
+                    <div class="ops-card-head">
+                        <div>
+                            <h3>Kategori ciro</h3>
+                            <span>@Model.CategorySales.Count kategori</span>
+                        </div>
+                    </div>
+                    <div class="category-rank">
+                        @foreach (var c in Model.CategorySales.OrderByDescending(x => x.Revenue).Take(7))
+                        {
+                            <div class="rank-row">
+                                <strong>@(string.IsNullOrWhiteSpace(c.Category) ? "Kategorisiz" : c.Category)</strong>
+                                <span>@c.Quantity.ToString("0.#", tr) adet</span>
+                                <em>@UiFormat.Money(c.Revenue)</em>
+                                <i style="width:@Width(c.Revenue, maxCategory)%"></i>
+                            </div>
+                        }
+                    </div>
+                </article>
+            </aside>
+        </section>
+
+        <section class="analysis-lower">
+            <article class="ops-card product-card" id="products">
+                <div class="ops-card-head">
+                    <div>
+                        <h3>Çok satan ürünler</h3>
+                        <span>Ciro sıralaması</span>
+                    </div>
+                </div>
+                <div class="product-rank">
+                    @foreach (var item in Model.TopItems.OrderByDescending(x => x.Revenue).Take(10).Select((x, idx) => new { Item = x, Index = idx + 1 }))
+                    {
+                        <div class="product-row">
+                            <span class="rank-no">@item.Index</span>
+                            <div>
+                                <strong>@item.Item.Name</strong>
+                                <small>@(string.IsNullOrWhiteSpace(item.Item.Category) ? "Kategorisiz" : item.Item.Category) · @item.Item.Quantity.ToString("0.#", tr) adet</small>
+                            </div>
+                            <em>@UiFormat.Money(item.Item.Revenue)</em>
+                            <i style="width:@Width(item.Item.Revenue, maxTop)%"></i>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <article class="ops-card hour-card" id="hours">
+                <div class="ops-card-head">
+                    <div>
+                        <h3>Saatlik yoğunluk</h3>
+                        <span>@Model.End.ToString("dd MMM", tr)</span>
+                    </div>
+                </div>
+                <div class="hour-grid">
+                    @foreach (var hour in Enumerable.Range(0, 24))
+                    {
+                        var h = Model.Hourly.FirstOrDefault(x => x.Hour == hour);
+                        var revenue = h?.Revenue ?? 0;
+                        var orders = h?.OrderCount ?? 0;
+                        <div class="hour-cell" style="--heat:@Width(revenue, maxHourly)" title="@($"{hour:00}:00 · {orders} adisyon · {UiFormat.Money(revenue)}")">
+                            <strong>@($"{hour:00}")</strong>
+                            <span>@orders</span>
+                        </div>
+                    }
+                </div>
+            </article>
+        </section>
+
+        <section class="ops-card daily-ledger">
+            <div class="ops-card-head">
+                <div>
+                    <h3>Gün dökümü</h3>
+                    <span>@Model.DailySummaries.Count gün</span>
+                </div>
+            </div>
+            <div class="daily-table">
+                <table>
+                    <thead><tr><th>Gün</th><th>Adisyon</th><th>Ciro</th><th>İndirim</th><th>Ort.</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in latestDays)
+                    {
+                        var avg = row.OrderCount == 0 ? 0 : row.Revenue / row.OrderCount;
+                        <tr>
+                            <td>@DateTime.Parse(row.BusinessDate).ToString("dd MMM ddd", tr)</td>
+                            <td>@row.OrderCount</td>
+                            <td>@UiFormat.Money(row.Revenue)</td>
+                            <td>@UiFormat.Money(row.DiscountTotal)</td>
+                            <td>@UiFormat.Money(avg)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>

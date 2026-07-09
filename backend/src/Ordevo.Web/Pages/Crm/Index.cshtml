@@ -1,0 +1,310 @@
+@page "/crm"
+@using System.Globalization
+@model Ordevo.Web.Pages.Crm.IndexModel
+@{
+    ViewData["Title"] = "CRM";
+    ViewData["Section"] = "Misafir";
+
+    var customers = Model.Customers.OrderByDescending(x => x.CreatedAt).ToList();
+    var reservations = Model.Reservations.OrderBy(x => x.ReservationTime).ThenBy(x => x.ReservationNo).ToList();
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="admin-page crm-admin">
+    <header class="admin-title">
+        <div>
+            <h2>CRM Yönetimi</h2>
+            <p>Müşterileri ve rezervasyonları yönetin</p>
+        </div>
+        <form method="get" class="admin-filter">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input class="form-control form-control-sm" name="search" value="@Model.Search" placeholder="Telefon veya isim ara" />
+            </div>
+            <input type="date" class="form-control form-control-sm" name="date" value="@Model.Date" />
+            <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-funnel"></i><span>Filtrele</span></button>
+        </form>
+    </header>
+
+    <div class="admin-layout two-panels">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Müşteriler</h3>
+                <span class="admin-count">@customers.Count</span>
+            </div>
+
+            <details class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Müşteri ekle</span></summary>
+                <form method="post" asp-page-handler="Customer" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Search" />
+                    <input type="hidden" asp-for="Date" />
+                    <input type="hidden" asp-for="Customer.EmailConsent" value="false" />
+                    <div class="row g-2">
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Customer.Phone" placeholder="Telefon" /></div>
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Customer.FullName" placeholder="Ad soyad" /></div>
+                        <div class="col-md-2">
+                            <label class="form-check mt-1">
+                                <input class="form-check-input" type="checkbox" asp-for="Customer.SmsConsent" />
+                                <span class="form-check-label">SMS</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Müşteri</th>
+                            <th>Sadakat</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var customer in customers)
+                        {
+                            <tr class="@(customer.IsBlocked ? "muted" : "")">
+                                <td>
+                                    <strong>@(customer.FullName ?? "İsimsiz müşteri")</strong>
+                                    <small><a class="admin-link" href="tel:@customer.Phone">@customer.Phone</a> · @(customer.Email ?? "E-posta yok")</small>
+                                </td>
+                                <td><span class="admin-badge">@customer.LoyaltyPoints puan · @customer.VisitCount ziyaret</span></td>
+                                <td><span class="admin-badge @(customer.IsBlocked ? "warn" : "ok")">@(customer.IsBlocked ? "Bloklu" : customer.LoyaltyTier)</span></td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="Customer" class="admin-popover-form wide">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="Customer.Id" value="@customer.Id" />
+                                                <input class="form-control form-control-sm" name="Customer.FullName" value="@customer.FullName" placeholder="Ad soyad" />
+                                                <input type="email" class="form-control form-control-sm" name="Customer.Email" value="@customer.Email" placeholder="E-posta" />
+                                                <input type="date" class="form-control form-control-sm" name="Customer.Birthday" value="@(customer.Birthday?.ToString("yyyy-MM-dd"))" />
+                                                <input class="form-control form-control-sm" name="Customer.Preferences" placeholder="Tercihler" />
+                                                <input class="form-control form-control-sm" name="Customer.Notes" placeholder="Not" />
+                                                <label class="form-check">
+                                                    <input type="hidden" name="Customer.SmsConsent" value="false" />
+                                                    <input class="form-check-input" type="checkbox" name="Customer.SmsConsent" value="true" checked="@customer.SmsConsent" />
+                                                    <span class="form-check-label">SMS</span>
+                                                </label>
+                                                <label class="form-check">
+                                                    <input type="hidden" name="Customer.EmailConsent" value="false" />
+                                                    <input class="form-check-input" type="checkbox" name="Customer.EmailConsent" value="true" checked="@customer.EmailConsent" />
+                                                    <span class="form-check-label">E-posta</span>
+                                                </label>
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+
+                                        <details class="admin-row-editor">
+                                            <summary title="Rezervasyon"><i class="bi bi-calendar-plus"></i></summary>
+                                            <form method="post" asp-page-handler="Reservation" class="admin-popover-form wide">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="Reservation.CustomerId" value="@customer.Id" />
+                                                <input type="hidden" name="Reservation.CustomerName" value="@(customer.FullName ?? customer.Phone)" />
+                                                <input type="hidden" name="Reservation.CustomerPhone" value="@customer.Phone" />
+                                                <input type="date" class="form-control form-control-sm" name="Reservation.ReservationDate" value="@Model.Date" />
+                                                <input class="form-control form-control-sm" name="Reservation.ReservationTime" value="19:00" />
+                                                <input type="number" min="1" class="form-control form-control-sm" name="Reservation.GuestCount" value="2" />
+                                                <select class="form-select form-select-sm" name="Reservation.TableId">
+                                                    <option value="">Masa seç</option>
+                                                    @foreach (var table in Model.Tables)
+                                                    {
+                                                        <option value="@table.Id">@table.Name</option>
+                                                    }
+                                                </select>
+                                                <input class="form-control form-control-sm" name="Reservation.Notes" placeholder="Not" />
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+
+                                        @if (customer.IsBlocked)
+                                        {
+                                            <form method="post" asp-page-handler="UnblockCustomer" asp-route-id="@customer.Id">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <button class="btn btn-sm btn-light-icon" type="submit" title="Bloku aç"><i class="bi bi-unlock"></i></button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form method="post" asp-page-handler="BlockCustomer" asp-route-id="@customer.Id">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="reason" value="Panel" />
+                                                <button class="btn btn-sm btn-light-icon" type="submit" data-confirm="Müşteri bloklansın mı?" title="Blokla"><i class="bi bi-slash-circle"></i></button>
+                                            </form>
+                                        }
+                                        <form method="post" asp-page-handler="DeleteCustomer" asp-route-id="@customer.Id">
+                                            <input type="hidden" asp-for="Search" />
+                                            <input type="hidden" asp-for="Date" />
+                                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Müşteri kalıcı silinsin mi?" title="Sil"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Rezervasyonlar</h3>
+                <span class="admin-count">@DateTime.Parse(Model.Date!).ToString("dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"))</span>
+            </div>
+
+            <details class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Rezervasyon ekle</span></summary>
+                <form method="post" asp-page-handler="Reservation" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Search" />
+                    <input type="hidden" asp-for="Date" />
+                    <div class="row g-2">
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Reservation.CustomerName" placeholder="Müşteri" /></div>
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Reservation.CustomerPhone" placeholder="Telefon" /></div>
+                        <div class="col-md-4"><input type="date" class="form-control form-control-sm" asp-for="Reservation.ReservationDate" /></div>
+                        <div class="col-md-3"><input class="form-control form-control-sm" asp-for="Reservation.ReservationTime" placeholder="Saat" /></div>
+                        <div class="col-md-3"><input type="number" min="1" class="form-control form-control-sm" asp-for="Reservation.GuestCount" placeholder="Kişi" /></div>
+                        <div class="col-md-6">
+                            <select class="form-select form-select-sm" asp-for="Reservation.TableId">
+                                <option value="">Masa seç</option>
+                                @foreach (var table in Model.Tables)
+                                {
+                                    <option value="@table.Id">@table.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12"><input class="form-control form-control-sm" asp-for="Reservation.Notes" placeholder="Not" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Saat</th>
+                            <th>Müşteri</th>
+                            <th>Masa</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var reservation in reservations)
+                        {
+                            <tr>
+                                <td><strong>@reservation.ReservationTime</strong></td>
+                                <td>
+                                    <strong>@reservation.CustomerName</strong>
+                                    <small><a class="admin-link" href="tel:@reservation.CustomerPhone">@reservation.CustomerPhone</a> · @reservation.GuestCount kişi</small>
+                                </td>
+                                <td>@TableName(reservation.TableId)</td>
+                                <td><span class="admin-badge @StatusClass(reservation.Status)">@StatusLabel(reservation.Status)</span></td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        @if (reservation.Status != "confirmed")
+                                        {
+                                            <form method="post" asp-page-handler="ReservationStatus">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="id" value="@reservation.Id" />
+                                                <input type="hidden" name="status" value="confirmed" />
+                                                <button class="btn btn-sm btn-light-icon" type="submit" title="Onayla"><i class="bi bi-check2"></i></button>
+                                            </form>
+                                        }
+                                        @if (reservation.Status != "seated")
+                                        {
+                                            <form method="post" asp-page-handler="ReservationStatus">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="id" value="@reservation.Id" />
+                                                <input type="hidden" name="status" value="seated" />
+                                                <button class="btn btn-sm btn-light-icon" type="submit" title="Oturt"><i class="bi bi-person-check"></i></button>
+                                            </form>
+                                        }
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="Reservation" class="admin-popover-form wide">
+                                                <input type="hidden" asp-for="Search" />
+                                                <input type="hidden" asp-for="Date" />
+                                                <input type="hidden" name="Reservation.Id" value="@reservation.Id" />
+                                                <input type="hidden" name="Reservation.CustomerId" value="@reservation.CustomerId" />
+                                                <input class="form-control form-control-sm" name="Reservation.CustomerName" value="@reservation.CustomerName" />
+                                                <input class="form-control form-control-sm" name="Reservation.CustomerPhone" value="@reservation.CustomerPhone" />
+                                                <input type="date" class="form-control form-control-sm" name="Reservation.ReservationDate" value="@reservation.ReservationDate.ToString("yyyy-MM-dd")" />
+                                                <input class="form-control form-control-sm" name="Reservation.ReservationTime" value="@reservation.ReservationTime" />
+                                                <input type="number" min="1" class="form-control form-control-sm" name="Reservation.GuestCount" value="@reservation.GuestCount" />
+                                                <select class="form-select form-select-sm" name="Reservation.TableId">
+                                                    <option value="">Masa seç</option>
+                                                    @foreach (var table in Model.Tables)
+                                                    {
+                                                        <option value="@table.Id" selected="@(table.Id == reservation.TableId)">@table.Name</option>
+                                                    }
+                                                </select>
+                                                <input class="form-control form-control-sm" name="Reservation.Notes" value="@reservation.Notes" placeholder="Not" />
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+                                        <details class="admin-row-editor">
+                                            <summary title="Durum"><i class="bi bi-arrow-repeat"></i></summary>
+                                            <div class="admin-popover-form">
+                                                @foreach (var status in new[] { "pending", "confirmed", "seated", "cancelled", "no_show" })
+                                                {
+                                                    <form method="post" asp-page-handler="ReservationStatus">
+                                                        <input type="hidden" asp-for="Search" />
+                                                        <input type="hidden" asp-for="Date" />
+                                                        <input type="hidden" name="id" value="@reservation.Id" />
+                                                        <input type="hidden" name="status" value="@status" />
+                                                        <button class="btn btn-sm @(reservation.Status == status ? "btn-getir" : "btn-outline-dark") w-100" type="submit">@StatusLabel(status)</button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </details>
+                                        <form method="post" asp-page-handler="DeleteReservation" asp-route-id="@reservation.Id">
+                                            <input type="hidden" asp-for="Search" />
+                                            <input type="hidden" asp-for="Date" />
+                                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Rezervasyon silinsin mi?" title="Sil"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+@functions {
+    private string TableName(string? id) =>
+        string.IsNullOrWhiteSpace(id) ? "-" : Model.Tables.FirstOrDefault(x => x.Id == id)?.Name ?? "-";
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "pending" => "Bekliyor",
+        "confirmed" => "Onaylı",
+        "seated" => "Oturtuldu",
+        "cancelled" => "İptal",
+        "no_show" => "Gelmedi",
+        _ => status
+    };
+
+    private static string StatusClass(string status) => status switch
+    {
+        "pending" => "warn",
+        "confirmed" => "ok",
+        "seated" => "ok",
+        "cancelled" => "off",
+        "no_show" => "off",
+        _ => ""
+    };
+}

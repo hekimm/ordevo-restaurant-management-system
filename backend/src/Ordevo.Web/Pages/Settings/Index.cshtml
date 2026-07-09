@@ -1,0 +1,406 @@
+@page "/ayarlar"
+@model Ordevo.Web.Pages.Settings.IndexModel
+@{
+    ViewData["Title"] = "Ayarlar";
+    ViewData["Section"] = "Sistem";
+    string Active(string tab) => string.Equals(Model.Tab, tab, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+@if (!Model.DeveloperUnlocked)
+{
+    <section class="panel settings-lock">
+        <div class="panel-head">
+            <h2>Geliştirici alanı</h2>
+            <span class="status-pill muted"><i class="bi bi-lock"></i> kilitli</span>
+        </div>
+        <form method="post" asp-page-handler="Unlock" class="settings-unlock">
+            <input type="hidden" asp-for="Tab" />
+            <div>
+                <label class="form-label small fw-bold">Geliştirici parolası</label>
+                <input type="password" class="form-control" asp-for="Unlock.Password" autocomplete="current-password" />
+            </div>
+            <button type="submit" class="btn btn-dark"><i class="bi bi-unlock"></i><span>Aç</span></button>
+        </form>
+    </section>
+}
+else
+{
+    <div class="toolbar">
+        <div class="segmented">
+            <a class="@Active("developer")" asp-page="/Settings/Index" asp-route-tab="developer"><i class="bi bi-sliders"></i><span>Geliştirici</span></a>
+            <a class="@Active("fiscal")" asp-page="/Settings/Index" asp-route-tab="fiscal"><i class="bi bi-receipt-cutoff"></i><span>Mali Entegrasyon</span></a>
+            <a class="@Active("integrations")" asp-page="/Settings/Index" asp-route-tab="integrations"><i class="bi bi-diagram-3"></i><span>Entegrasyon</span></a>
+            <a class="@Active("sync")" asp-page="/Settings/Index" asp-route-tab="sync"><i class="bi bi-arrow-repeat"></i><span>Sync</span></a>
+        </div>
+        <form method="post" asp-page-handler="Lock">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-lock"></i><span>Kilitle</span></button>
+        </form>
+    </div>
+
+    @if (Active("developer") == "active")
+    {
+        <form method="post" asp-page-handler="DeveloperToggles">
+            <input type="hidden" asp-for="Tab" value="developer" />
+            <div class="content-grid two-col">
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>Modül toggle</h2>
+                        <span class="count-pill">@Model.Toggles.Modules.Count modül</span>
+                    </div>
+                    <div class="toggle-list">
+                        @for (var i = 0; i < Model.Toggles.Modules.Count; i++)
+                        {
+                            <div class="toggle-row">
+                                <input type="hidden" asp-for="Toggles.Modules[i].Code" />
+                                <div>
+                                    <strong>@Model.Toggles.Modules[i].Name</strong>
+                                    <small>@Model.Toggles.Modules[i].Description</small>
+                                    <code>@Model.Toggles.Modules[i].Route</code>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" asp-for="Toggles.Modules[i].IsEnabled" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>Entegrasyon toggle</h2>
+                        <span class="count-pill">@Model.Toggles.Integrations.Count entegrasyon</span>
+                    </div>
+                    <div class="toggle-list">
+                        @for (var i = 0; i < Model.Toggles.Integrations.Count; i++)
+                        {
+                            <div class="toggle-row">
+                                <input type="hidden" asp-for="Toggles.Integrations[i].Code" />
+                                <div>
+                                    <strong>@Model.Toggles.Integrations[i].Name</strong>
+                                    <small>@Model.Toggles.Integrations[i].Description</small>
+                                    <code>@Model.Toggles.Integrations[i].Route</code>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" asp-for="Toggles.Integrations[i].IsEnabled" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+            </div>
+            <div class="text-end mt-3">
+                <button class="btn btn-dark" type="submit"><i class="bi bi-save"></i><span>Kaydet</span></button>
+            </div>
+        </form>
+    }
+    else if (Active("fiscal") == "active")
+    {
+        <div class="fiscal-console">
+            <section class="panel fiscal-status-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>Mali Entegrasyon</h2>
+                        <small>POS cihazı, e-Belge ve e-Adisyon operasyon merkezi</small>
+                    </div>
+                    <span class="status-pill @(Model.FiscalOverview.ActiveTerminalCount > 0 ? "" : "warn")">
+                        @Model.FiscalOverview.ActiveTerminalCount aktif cihaz
+                    </span>
+                </div>
+                <div class="fiscal-health-grid">
+                    <div><small>POS sağlayıcı</small><strong>@Model.FiscalOverview.PaymentTerminalProvider</strong></div>
+                    <div><small>e-Adisyon</small><strong>@(Model.FiscalOverview.EAdisyonEnabled ? Model.FiscalOverview.EAdisyonProvider : "Kapalı")</strong></div>
+                    <div><small>Açık komut</small><strong>@Model.FiscalOverview.OpenCommandCount</strong></div>
+                </div>
+            </section>
+
+            <div class="content-grid two-col mt-3">
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>Connector ekle</h2>
+                        <span class="count-pill">GMP-3 / özel entegratör</span>
+                    </div>
+                    <form method="post" asp-page-handler="FiscalConnector" class="admin-form-grid">
+                        <input type="hidden" asp-for="Tab" value="fiscal" />
+                        <div><label class="form-label">Kod</label><input class="form-control" asp-for="FiscalConnector.Code" /></div>
+                        <div><label class="form-label">Ad</label><input class="form-control" asp-for="FiscalConnector.Name" /></div>
+                        <div>
+                            <label class="form-label">Tip</label>
+                            <select class="form-select" asp-for="FiscalConnector.ConnectorType">
+                                <option value="payment_terminal">Ödeme terminali</option>
+                                <option value="fiscal">Mali cihaz</option>
+                            </select>
+                        </div>
+                        <div><label class="form-label">Provider</label><input class="form-control" asp-for="FiscalConnector.ProviderCode" /></div>
+                        <div class="span-2"><label class="form-label">Agent / API URL</label><input class="form-control" asp-for="FiscalConnector.BaseUrl" placeholder="https://pos-agent.local" /></div>
+                        <div>
+                            <label class="form-label">Yetki tipi</label>
+                            <select class="form-select" asp-for="FiscalConnector.AuthType">
+                                <option value="none">Yok</option>
+                                <option value="api_key">API key</option>
+                                <option value="bearer">Bearer</option>
+                                <option value="basic">Basic</option>
+                            </select>
+                        </div>
+                        <div><label class="form-label">Secret ref</label><input class="form-control" asp-for="FiscalConnector.SecretRef" /></div>
+                        <div class="span-2 text-end">
+                            <button class="btn btn-dark" type="submit"><i class="bi bi-plus-lg"></i><span>Connector Kaydet</span></button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>POS cihazı ekle</h2>
+                        <span class="count-pill">@Model.FiscalOverview.Terminals.Count cihaz</span>
+                    </div>
+                    <form method="post" asp-page-handler="FiscalTerminal" class="admin-form-grid">
+                        <input type="hidden" asp-for="Tab" value="fiscal" />
+                        <div><label class="form-label">Ad</label><input class="form-control" asp-for="FiscalTerminal.Name" /></div>
+                        <div>
+                            <label class="form-label">Tip</label>
+                            <select class="form-select" asp-for="FiscalTerminal.TerminalType">
+                                <option value="payment">Ödeme</option>
+                                <option value="fiscal">Mali cihaz</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Connector</label>
+                            <select class="form-select" asp-for="FiscalTerminal.ConnectorId">
+                                <option value="">Bağımsız</option>
+                                @foreach (var connector in Model.Connectors.Where(x => x.ConnectorType is "payment_terminal" or "fiscal"))
+                                {
+                                    <option value="@connector.Id">@connector.Name · @connector.ProviderCode</option>
+                                }
+                            </select>
+                        </div>
+                        <div><label class="form-label">Terminal no</label><input class="form-control" asp-for="FiscalTerminal.ProviderTerminalId" /></div>
+                        <div>
+                            <label class="form-label">Bağlantı</label>
+                            <select class="form-select" asp-for="FiscalTerminal.ConnectionMode">
+                                <option value="cloud">Cloud / TSM</option>
+                                <option value="ethernet">Ethernet</option>
+                                <option value="serial">Seri port</option>
+                                <option value="usb">USB</option>
+                                <option value="app_to_app">App-to-app</option>
+                            </select>
+                        </div>
+                        <div><label class="form-label">IP</label><input class="form-control" asp-for="FiscalTerminal.IpAddress" /></div>
+                        <div><label class="form-label">Port</label><input class="form-control" asp-for="FiscalTerminal.Port" /></div>
+                        <div><label class="form-label">Seri yol</label><input class="form-control" asp-for="FiscalTerminal.SerialPath" /></div>
+                        <div class="span-2 text-end">
+                            <button class="btn btn-dark" type="submit"><i class="bi bi-hdd-network"></i><span>Cihaz Kaydet</span></button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <div class="content-grid two-col mt-3">
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>Cihazlar</h2>
+                        <span class="count-pill">@Model.FiscalOverview.Terminals.Count kayıt</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Ad</th><th>Tip</th><th>Mod</th><th>Terminal</th><th>Test</th></tr></thead>
+                            <tbody>
+                            @foreach (var terminal in Model.FiscalOverview.Terminals)
+                            {
+                                <tr>
+                                    <td>@terminal.Name</td>
+                                    <td>@terminal.TerminalType</td>
+                                    <td>@terminal.ConnectionMode</td>
+                                    <td>@(terminal.ProviderTerminalId ?? "-")</td>
+                                    <td>
+                                        <form method="post" asp-page-handler="FiscalTestSale" class="inline-test-sale">
+                                            <input type="hidden" asp-for="Tab" value="fiscal" />
+                                            <input type="hidden" name="FiscalTestSale.TerminalId" value="@terminal.Id" />
+                                            <input type="hidden" name="FiscalTestSale.Amount" value="0.01" />
+                                            <button class="btn btn-sm btn-outline-dark" type="submit" data-confirm="Bu POS cihazına 0,01 TL test işlemi gönderilsin mi?">
+                                                <i class="bi bi-broadcast-pin"></i><span>Test</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <h2>Uzlaşma izi</h2>
+                        <span class="count-pill">@Model.FiscalOverview.RecentTransactions.Count işlem</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Tarih</th><th>Yöntem</th><th>Tutar</th><th>Durum</th><th>Referans</th></tr></thead>
+                            <tbody>
+                            @foreach (var tx in Model.FiscalOverview.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>@tx.CreatedAt.ToLocalTime().ToString("dd.MM HH:mm")</td>
+                                    <td>@tx.Method</td>
+                                    <td>₺@UiFormat.Money(tx.Amount)</td>
+                                    <td><span class="status-pill @(tx.Status == "failed" ? "warn" : "")">@tx.Status</span></td>
+                                    <td>@(tx.Rrn ?? tx.AuthorizationCode ?? UiFormat.ShortId(tx.CommandId))</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    }
+    else if (Active("integrations") == "active")
+    {
+        <div class="content-grid two-col">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Connector</h2>
+                    <span class="count-pill">@Model.Connectors.Count kayıt</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Kod</th><th>Tip</th><th>Provider</th><th>Durum</th></tr></thead>
+                        <tbody>
+                        @foreach (var connector in Model.Connectors)
+                        {
+                            <tr>
+                                <td>@connector.Code</td>
+                                <td>@connector.ConnectorType</td>
+                                <td>@connector.ProviderCode</td>
+                                <td><span class="status-pill @(connector.IsActive ? "" : "muted")">@connector.Status</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Terminal</h2>
+                    <span class="count-pill">@Model.Terminals.Count kayıt</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Ad</th><th>Tip</th><th>Mod</th><th>Durum</th></tr></thead>
+                        <tbody>
+                        @foreach (var terminal in Model.Terminals)
+                        {
+                            <tr>
+                                <td>@terminal.Name</td>
+                                <td>@terminal.TerminalType</td>
+                                <td>@terminal.ConnectionMode</td>
+                                <td><span class="status-pill @(terminal.IsActive == 1 ? "" : "muted")">@(terminal.IsActive == 1 ? "aktif" : "pasif")</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="content-grid two-col mt-3">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Event outbox</h2>
+                    <span class="count-pill">@Model.Events.Count event</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Event</th><th>Kaynak</th><th>Deneme</th><th>Durum</th></tr></thead>
+                        <tbody>
+                        @foreach (var ev in Model.Events)
+                        {
+                            <tr>
+                                <td>@ev.EventType</td>
+                                <td>@ev.SourceModule</td>
+                                <td>@ev.Attempts</td>
+                                <td><span class="status-pill warn">@ev.Status</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Terminal komutları</h2>
+                    <span class="count-pill">@Model.Commands.Count komut</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Tip</th><th>Terminal</th><th>Order</th><th>Durum</th></tr></thead>
+                        <tbody>
+                        @foreach (var command in Model.Commands)
+                        {
+                            <tr>
+                                <td>@command.CommandType</td>
+                                <td>@UiFormat.ShortId(command.TerminalId)</td>
+                                <td>@UiFormat.ShortId(command.OrderId)</td>
+                                <td><span class="status-pill">@command.Status</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    }
+    else
+    {
+        <div class="content-grid two-col">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Entity katalogu</h2>
+                    <span class="count-pill">@Model.Entities.Count entity</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Entity</th><th>Tablo</th><th>Branch</th><th>Push</th></tr></thead>
+                        <tbody>
+                        @foreach (var entity in Model.Entities)
+                        {
+                            <tr>
+                                <td>@entity.EntityName</td>
+                                <td>@entity.TableName</td>
+                                <td>@(entity.IsBranchScoped ? "evet" : "hayır")</td>
+                                <td><span class="status-pill @(entity.AllowClientPush ? "warn" : "muted")">@(entity.AllowClientPush ? "açık" : "kapalı")</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Pending mutation</h2>
+                    <span class="count-pill">@Model.PendingMutations.Count kayıt</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Entity</th><th>Operasyon</th><th>Cihaz</th><th>Durum</th></tr></thead>
+                        <tbody>
+                        @foreach (var mutation in Model.PendingMutations)
+                        {
+                            <tr>
+                                <td>@mutation.EntityName</td>
+                                <td>@mutation.Operation</td>
+                                <td>@UiFormat.ShortId(mutation.DeviceId)</td>
+                                <td><span class="status-pill warn">@mutation.Status</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    }
+}

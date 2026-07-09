@@ -1,0 +1,315 @@
+@page "/inventory"
+@using System.Globalization
+@model Ordevo.Web.Pages.Inventory.IndexModel
+@{
+    ViewData["Title"] = "Stok";
+    ViewData["Section"] = "Depo";
+
+    var stockItems = Model.StockItems.OrderBy(x => x.Name).ToList();
+    var units = Model.Units.OrderBy(x => x.Code).ToList();
+    var suppliers = Model.Suppliers.OrderBy(x => x.Name).ToList();
+    var criticalItems = stockItems.Where(x => x.OnHand <= x.ReorderLevel).ToList();
+    var inventoryValue = stockItems.Sum(x => x.OnHand * x.UnitCost);
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="admin-page ops-admin inventory-admin">
+    <header class="admin-title">
+        <div>
+            <h2>Stok Yönetimi</h2>
+            <p>Depo kalemleri, sayım düzeltmeleri ve satın almaları yönetin</p>
+        </div>
+        <div class="admin-title-actions">
+            <a class="btn btn-sm btn-getir" href="#stock-add"><i class="bi bi-plus-lg"></i><span>Stok Ekle</span></a>
+            <a class="btn btn-sm btn-getir" href="#adjust-stock"><i class="bi bi-clipboard-check"></i><span>Sayım</span></a>
+            <a class="btn btn-sm btn-getir" href="#purchase-entry"><i class="bi bi-truck"></i><span>Satın Alma</span></a>
+        </div>
+    </header>
+
+    <div class="admin-stat-grid">
+        <div class="admin-stat-card">
+            <span>Stok Kalemi</span>
+            <strong>@stockItems.Count</strong>
+            <small>@stockItems.Count(x => x.IsActive) aktif kalem</small>
+        </div>
+        <div class="admin-stat-card warn">
+            <span>Kritik Stok</span>
+            <strong>@criticalItems.Count</strong>
+            <small>eşik altında veya eşikte</small>
+        </div>
+        <div class="admin-stat-card cash">
+            <span>Depo Değeri</span>
+            <strong>@UiFormat.Money(inventoryValue)</strong>
+            <small>mevcut miktar x maliyet</small>
+        </div>
+        <div class="admin-stat-card">
+            <span>Tedarikçi</span>
+            <strong>@suppliers.Count</strong>
+            <small>@suppliers.Count(x => x.IsActive) aktif kayıt</small>
+        </div>
+    </div>
+
+    <div class="admin-layout inventory-main">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Stok Kalemleri</h3>
+                <span class="admin-count">@stockItems.Count kayıt</span>
+            </div>
+
+            <details id="stock-add" class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Stok kalemi ekle</span></summary>
+                <form method="post" asp-page-handler="Stock" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Stock.IsActive" value="true" />
+                    <div class="row g-2">
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Stock.Name" placeholder="Kalem adı" /></div>
+                        <div class="col-md-2"><input class="form-control form-control-sm" asp-for="Stock.Sku" placeholder="SKU" /></div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" asp-for="Stock.UnitId">
+                                @if (units.Count == 0)
+                                {
+                                    <option value="">Birim yok</option>
+                                }
+                                @foreach (var unit in units)
+                                {
+                                    <option value="@unit.Id">@unit.Code</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Stock.ReorderLevel" placeholder="Kritik" /></div>
+                        <div class="col-md-2"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Stock.UnitCost" placeholder="Maliyet" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Kalem</th>
+                            <th>Mevcut</th>
+                            <th>Kritik</th>
+                            <th>Maliyet</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (stockItems.Count == 0)
+                        {
+                            <tr><td colspan="6" class="admin-empty">Stok kalemi yok</td></tr>
+                        }
+                        @foreach (var item in stockItems)
+                        {
+                            var critical = item.OnHand <= item.ReorderLevel;
+                            <tr class="@(!item.IsActive ? "muted" : critical ? "row-warn" : "")">
+                                <td>
+                                    <strong>@item.Name</strong>
+                                    <small>@(item.Sku ?? "SKU yok") · @(item.UnitCode ?? "-")</small>
+                                </td>
+                                <td><span class="admin-badge @(critical ? "warn" : "ok")">@item.OnHand.ToString("N2") @(item.UnitCode ?? "")</span></td>
+                                <td>@item.ReorderLevel.ToString("N2")</td>
+                                <td>@UiFormat.Money(item.UnitCost)</td>
+                                <td><span class="admin-badge @(item.IsActive ? "ok" : "off")">@(item.IsActive ? "Aktif" : "Pasif")</span></td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="Stock" class="admin-popover-form wide">
+                                                <input type="hidden" name="Stock.Id" value="@item.Id" />
+                                                <input class="form-control form-control-sm" name="Stock.Name" value="@item.Name" placeholder="Kalem adı" />
+                                                <input class="form-control form-control-sm" name="Stock.Sku" value="@item.Sku" placeholder="SKU" />
+                                                <select class="form-select form-select-sm" name="Stock.UnitId">
+                                                    @foreach (var unit in units)
+                                                    {
+                                                        <option value="@unit.Id" selected="@(unit.Id == item.UnitId)">@unit.Code</option>
+                                                    }
+                                                </select>
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Stock.ReorderLevel" value="@item.ReorderLevel.ToString(CultureInfo.InvariantCulture)" placeholder="Kritik" />
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Stock.UnitCost" value="@item.UnitCost.ToString(CultureInfo.InvariantCulture)" placeholder="Maliyet" />
+                                                <label class="form-check">
+                                                    <input type="hidden" name="Stock.IsActive" value="false" />
+                                                    <input class="form-check-input" type="checkbox" name="Stock.IsActive" value="true" checked="@item.IsActive" />
+                                                    <span class="form-check-label">Aktif</span>
+                                                </label>
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+                                        <form method="post" asp-page-handler="DeleteStock" asp-route-id="@item.Id">
+                                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Stok kalemi pasifleştirilsin mi?" title="Pasifleştir"><i class="bi bi-slash-circle"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="admin-stack">
+            <section id="adjust-stock" class="admin-card">
+                <div class="admin-card-head">
+                    <h3>Sayım Düzeltme</h3>
+                    <span class="admin-count">Depo</span>
+                </div>
+                <form method="post" asp-page-handler="Adjust" class="admin-form">
+                    <select class="form-select form-select-sm" asp-for="Adjust.StockItemId">
+                        @if (stockItems.Count == 0)
+                        {
+                            <option value="">Stok kalemi yok</option>
+                        }
+                        @foreach (var item in stockItems)
+                        {
+                            <option value="@item.Id">@item.Name (@item.OnHand.ToString("N2") @(item.UnitCode ?? ""))</option>
+                        }
+                    </select>
+                    <div class="row g-2 mt-1">
+                        <div class="col-5"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Adjust.NewQuantity" placeholder="Yeni miktar" /></div>
+                        <div class="col-7"><input class="form-control form-control-sm" asp-for="Adjust.Reason" placeholder="Neden" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Sayımı Kaydet</span></button>
+                </form>
+            </section>
+
+            <section id="purchase-entry" class="admin-card">
+                <div class="admin-card-head">
+                    <h3>Satın Alma</h3>
+                    <span class="admin-count">Giriş</span>
+                </div>
+                <form method="post" asp-page-handler="Purchase" class="admin-form">
+                    <select class="form-select form-select-sm" asp-for="Purchase.SupplierId">
+                        <option value="">Tedarikçi seçilmedi</option>
+                        @foreach (var supplier in suppliers.Where(x => x.IsActive))
+                        {
+                            <option value="@supplier.Id">@supplier.Name</option>
+                        }
+                    </select>
+                    <select class="form-select form-select-sm mt-2" asp-for="Purchase.StockItemId">
+                        @if (stockItems.Count == 0)
+                        {
+                            <option value="">Stok kalemi yok</option>
+                        }
+                        @foreach (var item in stockItems)
+                        {
+                            <option value="@item.Id">@item.Name</option>
+                        }
+                    </select>
+                    <div class="row g-2 mt-1">
+                        <div class="col-4"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Purchase.Quantity" placeholder="Miktar" /></div>
+                        <div class="col-4"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Purchase.UnitCost" placeholder="Maliyet" /></div>
+                        <div class="col-4"><input class="form-control form-control-sm" asp-for="Purchase.Note" placeholder="Not" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-plus-lg"></i><span>Stok Girişi</span></button>
+                </form>
+            </section>
+        </aside>
+    </div>
+
+    <div class="admin-layout two-panels inventory-reference">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Birimler</h3>
+                <span class="admin-count">@units.Count</span>
+            </div>
+            <details class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Birim ekle</span></summary>
+                <form method="post" asp-page-handler="Unit" class="admin-form mt-2">
+                    <div class="row g-2">
+                        <div class="col-4"><input class="form-control form-control-sm" asp-for="Unit.Code" placeholder="kg" /></div>
+                        <div class="col-8"><input class="form-control form-control-sm" asp-for="Unit.Name" placeholder="Kilogram" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+            <div class="admin-table-wrap">
+                <table class="admin-table compact">
+                    <thead><tr><th>Kod</th><th>Ad</th><th>İşlemler</th></tr></thead>
+                    <tbody>
+                    @foreach (var unit in units)
+                    {
+                        <tr>
+                            <td><strong>@unit.Code</strong></td>
+                            <td>@unit.Name</td>
+                            <td>
+                                <div class="admin-row-actions">
+                                    <details class="admin-row-editor">
+                                        <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                        <form method="post" asp-page-handler="Unit" class="admin-popover-form">
+                                            <input type="hidden" name="Unit.Id" value="@unit.Id" />
+                                            <input class="form-control form-control-sm" name="Unit.Code" value="@unit.Code" />
+                                            <input class="form-control form-control-sm" name="Unit.Name" value="@unit.Name" />
+                                            <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                        </form>
+                                    </details>
+                                    <form method="post" asp-page-handler="DeleteUnit" asp-route-id="@unit.Id">
+                                        <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Birim silinsin mi?" title="Sil"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Tedarikçiler</h3>
+                <span class="admin-count">@suppliers.Count</span>
+            </div>
+            <details class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Tedarikçi ekle</span></summary>
+                <form method="post" asp-page-handler="Supplier" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Supplier.IsActive" value="true" />
+                    <div class="row g-2">
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Supplier.Name" placeholder="Tedarikçi" /></div>
+                        <div class="col-md-3"><input class="form-control form-control-sm" asp-for="Supplier.Phone" placeholder="Telefon" /></div>
+                        <div class="col-md-3"><input class="form-control form-control-sm" asp-for="Supplier.Email" placeholder="E-posta" /></div>
+                        <div class="col-md-2"><input class="form-control form-control-sm" asp-for="Supplier.TaxNo" placeholder="Vergi no" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+            <div class="admin-table-wrap">
+                <table class="admin-table compact">
+                    <thead><tr><th>Tedarikçi</th><th>İletişim</th><th>Durum</th><th>İşlemler</th></tr></thead>
+                    <tbody>
+                    @foreach (var supplier in suppliers)
+                    {
+                        <tr class="@(!supplier.IsActive ? "muted" : "")">
+                            <td><strong>@supplier.Name</strong><small>@(supplier.TaxNo ?? "Vergi no yok")</small></td>
+                            <td>@(supplier.Phone ?? supplier.Email ?? "-")</td>
+                            <td><span class="admin-badge @(supplier.IsActive ? "ok" : "off")">@(supplier.IsActive ? "Aktif" : "Pasif")</span></td>
+                            <td>
+                                <div class="admin-row-actions">
+                                    <details class="admin-row-editor">
+                                        <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                        <form method="post" asp-page-handler="Supplier" class="admin-popover-form wide">
+                                            <input type="hidden" name="Supplier.Id" value="@supplier.Id" />
+                                            <input class="form-control form-control-sm" name="Supplier.Name" value="@supplier.Name" placeholder="Ad" />
+                                            <input class="form-control form-control-sm" name="Supplier.Phone" value="@supplier.Phone" placeholder="Telefon" />
+                                            <input class="form-control form-control-sm" name="Supplier.Email" value="@supplier.Email" placeholder="E-posta" />
+                                            <input class="form-control form-control-sm" name="Supplier.TaxNo" value="@supplier.TaxNo" placeholder="Vergi no" />
+                                            <label class="form-check">
+                                                <input type="hidden" name="Supplier.IsActive" value="false" />
+                                                <input class="form-check-input" type="checkbox" name="Supplier.IsActive" value="true" checked="@supplier.IsActive" />
+                                                <span class="form-check-label">Aktif</span>
+                                            </label>
+                                            <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                        </form>
+                                    </details>
+                                    <form method="post" asp-page-handler="DeleteSupplier" asp-route-id="@supplier.Id">
+                                        <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Tedarikçi pasifleştirilsin mi?" title="Pasifleştir"><i class="bi bi-slash-circle"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>

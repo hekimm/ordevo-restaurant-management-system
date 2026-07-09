@@ -1,0 +1,286 @@
+@page "/printer"
+@model Ordevo.Web.Pages.Print.IndexModel
+@{
+    ViewData["Title"] = "Yazıcı";
+    ViewData["Section"] = "Yazıcı";
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<section class="printer-console">
+    <div class="printer-statusbar">
+        <div class="printer-stat ok">
+            <span><i class="bi bi-printer-fill"></i></span>
+            <div>
+                <strong>@Model.OnlinePrinterCount/@Model.ActivePrinterCount</strong>
+                <small>bağlı yazıcı</small>
+            </div>
+        </div>
+        <div class="printer-stat">
+            <span><i class="bi bi-list-check"></i></span>
+            <div>
+                <strong>@Model.WaitingJobCount</strong>
+                <small>bekleyen iş</small>
+            </div>
+        </div>
+        <div class="printer-stat @(Model.FailedJobCount > 0 ? "bad" : "")">
+            <span><i class="bi bi-exclamation-triangle-fill"></i></span>
+            <div>
+                <strong>@Model.FailedJobCount</strong>
+                <small>hatalı iş</small>
+            </div>
+        </div>
+        <form method="get" class="printer-order-search">
+            <label for="orderIdSearch">Hesap kodu</label>
+            <div>
+                <input id="orderIdSearch" class="form-control form-control-sm" asp-for="OrderId" placeholder="Hesap kodu gir" />
+                <button class="btn btn-sm btn-dark" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="printer-layout">
+        <section class="printer-panel printer-devices">
+            <div class="printer-panel-head">
+                <div>
+                    <h2>Yazıcılar</h2>
+                    <p>Şubedeki bağlı yazıcılar</p>
+                </div>
+                <span class="count-pill">@Model.Printers.Count yazıcı</span>
+            </div>
+
+            @if (Model.Printers.Count == 0)
+            {
+                <div class="printer-empty">
+                    <i class="bi bi-printer"></i>
+                    <strong>Henüz yazıcı yok</strong>
+                    <span>Kasa veya mutfak yazıcısı bekleniyor.</span>
+                </div>
+            }
+            else
+            {
+                <div class="printer-device-list">
+                    @foreach (var printer in Model.Printers)
+                    {
+                        var statusClass = IndexModel.PrinterStatusClass(printer);
+                        <article class="printer-device @statusClass">
+                            <div class="printer-device-main">
+                                <span class="printer-device-icon"><i class="bi bi-printer-fill"></i></span>
+                                <div>
+                                    <strong>@printer.Name</strong>
+                                    <small>@IndexModel.PrinterRole(printer) · @IndexModel.ConnectionLabel(printer)</small>
+                                </div>
+                            </div>
+                            <div class="printer-device-meta">
+                                <span class="printer-pill @statusClass">@IndexModel.PrinterStatus(printer)</span>
+                                <span>@IndexModel.EndpointLabel(printer)</span>
+                                <span>@IndexModel.LastSeen(printer)</span>
+                            </div>
+                            <form method="post" asp-page-handler="Test">
+                                <input type="hidden" name="terminalId" value="@printer.Id" />
+                                <button class="printer-icon-btn" type="submit" title="Test fişi gönder">
+                                    <i class="bi bi-lightning-charge-fill"></i>
+                                </button>
+                            </form>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="printer-panel printer-setup">
+            <div class="printer-panel-head">
+                <div>
+                    <h2>Yazıcı Ekle</h2>
+                    <p>3 adımda hazırla</p>
+                </div>
+                <i class="bi bi-usb-symbol setup-mark"></i>
+            </div>
+
+            <form method="post" asp-page-handler="Printer" class="printer-setup-form">
+                <div class="printer-step">
+                    <div class="printer-step-title"><span>1</span><strong>Nerede kullanılacak?</strong></div>
+                    <div class="printer-choice-grid">
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.Role" value="receipt" />
+                            <i class="bi bi-receipt-cutoff"></i>
+                            <span>Kasa</span>
+                        </label>
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.Role" value="kitchen" />
+                            <i class="bi bi-fire"></i>
+                            <span>Mutfak</span>
+                        </label>
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.Role" value="backup" />
+                            <i class="bi bi-printer"></i>
+                            <span>Yedek</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="printer-step">
+                    <div class="printer-step-title"><span>2</span><strong>Nasıl bağlanacak?</strong></div>
+                    <div class="printer-choice-grid connection">
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.ConnectionMode" value="usb" />
+                            <i class="bi bi-usb-symbol"></i>
+                            <span>USB kablo</span>
+                        </label>
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.ConnectionMode" value="cloud" />
+                            <i class="bi bi-pc-display"></i>
+                            <span>Bu cihaz</span>
+                        </label>
+                        <label class="printer-choice">
+                            <input class="printer-choice-input" type="radio" asp-for="Printer.ConnectionMode" value="ethernet" />
+                            <i class="bi bi-wifi"></i>
+                            <span>Ağdaki yazıcı</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="printer-step">
+                    <div class="printer-step-title"><span>3</span><strong>Adını seç</strong></div>
+                    <input class="form-control form-control-sm printer-friendly-name" asp-for="Printer.Name" placeholder="Kasa Yazıcısı" />
+                </div>
+
+                <details class="printer-advanced">
+                    <summary><i class="bi bi-sliders"></i><span>Gelişmiş ayarlar</span></summary>
+                    <div class="printer-two">
+                        <label>
+                            <span>Cihaz adresi</span>
+                            <input class="form-control form-control-sm" asp-for="Printer.IpAddress" placeholder="192.168.1.40" />
+                        </label>
+                        <label>
+                            <span>Port</span>
+                            <input class="form-control form-control-sm" asp-for="Printer.Port" type="number" min="1" max="65535" />
+                        </label>
+                    </div>
+                    <div class="printer-two">
+                        <label>
+                            <span>USB/seri yol</span>
+                            <input class="form-control form-control-sm" asp-for="Printer.SerialPath" placeholder="/dev/usb/lp0" />
+                        </label>
+                        <label>
+                            <span>Yazdırma tipi</span>
+                            <select class="form-select form-select-sm" asp-for="Printer.Profile">
+                                <option value="escpos">Termal yazıcı</option>
+                                <option value="browser">Tarayıcıdan yazdır</option>
+                                <option value="fiscal">Mali yazıcı</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="printer-checks">
+                        <label><input class="form-check-input" asp-for="Printer.AutoCut" /> Otomatik kes</label>
+                        <label><input class="form-check-input" asp-for="Printer.CashDrawer" /> Çekmece aç</label>
+                        <label>
+                            <span>Kağıt</span>
+                            <select class="form-select form-select-sm" asp-for="Printer.PaperWidth">
+                                <option value="58">58 mm</option>
+                                <option value="80">80 mm</option>
+                            </select>
+                        </label>
+                    </div>
+                </details>
+
+                <button type="submit" class="printer-save"><i class="bi bi-check2-circle"></i><span>Kaydet ve Teste Hazırla</span></button>
+            </form>
+        </section>
+    </div>
+
+    <div class="printer-doc-grid">
+        <section class="printer-panel">
+            <div class="printer-panel-head">
+                <div>
+                    <h2>Müşteri Fişi</h2>
+                    <p>@(Model.Receipt is null ? "Hesap seçilince burada görünür" : $"Hesap #{Model.Receipt.OrderNo}")</p>
+                </div>
+                @if (Model.Receipt is not null)
+                {
+                    <span class="count-pill">@Model.Receipt.Lines.Count kalem</span>
+                }
+            </div>
+            @if (Model.Receipt is not null)
+            {
+                <pre class="receipt-preview printer-preview">@Model.Receipt.PlainText</pre>
+                <form method="post" asp-page-handler="Receipt" class="printer-send-row">
+                    <input type="hidden" asp-for="OrderId" />
+                    <select class="form-select form-select-sm" asp-for="Queue.TerminalId">
+                        <option value="@Model.DefaultReceiptTerminalId">Varsayılan kasa</option>
+                        @foreach (var printer in Model.Printers)
+                        {
+                            <option value="@printer.Id">@printer.Name</option>
+                        }
+                    </select>
+                    <input class="form-control form-control-sm copies-input" asp-for="Queue.Copies" type="number" min="1" max="9" />
+                    <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-printer"></i><span>Kuyruğa Al</span></button>
+                </form>
+            }
+            else
+            {
+                <div class="printer-empty compact"><i class="bi bi-receipt"></i><span>Masadan hesap açıldığında fiş hazır olur.</span></div>
+            }
+        </section>
+
+        <section class="printer-panel">
+            <div class="printer-panel-head">
+                <div>
+                    <h2>Mutfak Çıktısı</h2>
+                    <p>@(Model.KitchenTicket is null ? "Aşçıların göreceği sipariş" : $"Hesap #{Model.KitchenTicket.OrderNo}")</p>
+                </div>
+                @if (Model.KitchenTicket is not null)
+                {
+                    <span class="count-pill">@Model.KitchenTicket.Lines.Count kalem</span>
+                }
+            </div>
+            @if (Model.KitchenTicket is not null)
+            {
+                <pre class="receipt-preview printer-preview">@Model.KitchenTicket.PlainText</pre>
+                <form method="post" asp-page-handler="Kitchen" class="printer-send-row">
+                    <input type="hidden" asp-for="OrderId" />
+                    <select class="form-select form-select-sm" asp-for="Queue.TerminalId">
+                        <option value="@Model.DefaultKitchenTerminalId">Varsayılan mutfak</option>
+                        @foreach (var printer in Model.Printers)
+                        {
+                            <option value="@printer.Id">@printer.Name</option>
+                        }
+                    </select>
+                    <input class="form-control form-control-sm copies-input" asp-for="Queue.Copies" type="number" min="1" max="9" />
+                    <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-fire"></i><span>Kuyruğa Al</span></button>
+                </form>
+            }
+            else
+            {
+                <div class="printer-empty compact"><i class="bi bi-fire"></i><span>Masadan sipariş girildiğinde mutfak çıktısı hazır olur.</span></div>
+            }
+        </section>
+    </div>
+
+    <section class="printer-panel">
+        <div class="printer-panel-head">
+            <div>
+                <h2>Son Yazdırmalar</h2>
+                <p>Bugünkü yazıcı hareketleri</p>
+            </div>
+            <span class="count-pill">@Model.Jobs.Count yazdırma</span>
+        </div>
+        <div class="table-responsive printer-table">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>İçerik</th><th>Hesap</th><th>Yazıcı</th><th>Sonuç</th><th>Adet</th><th>Saat</th></tr></thead>
+                <tbody>
+                @foreach (var job in Model.Jobs)
+                {
+                    <tr>
+                        <td>@(job.JobType == "kitchen_ticket" ? "Mutfak" : "Müşteri")</td>
+                        <td>@UiFormat.ShortId(job.OrderId)</td>
+                        <td>@Model.PrinterName(job.TerminalId)</td>
+                        <td><span class="printer-pill @IndexModel.PrintStatusClass(job.Status)">@IndexModel.PrintStatusLabel(job.Status)</span></td>
+                        <td>@job.Copies</td>
+                        <td>@job.CreatedAt.LocalDateTime.ToString("dd.MM HH:mm")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>

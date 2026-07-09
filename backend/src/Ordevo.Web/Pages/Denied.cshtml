@@ -1,0 +1,11 @@
+@page "/denied"
+@model DeniedModel
+@{
+    ViewData["Title"] = "Yetki Yok";
+    ViewData["Section"] = "Güvenlik";
+}
+<div class="empty-state">
+    <i class="bi bi-shield-lock"></i>
+    <h2>Erişim reddedildi</h2>
+    <p>Bu ekran için gerekli yetki oturumunda yok.</p>
+</div>

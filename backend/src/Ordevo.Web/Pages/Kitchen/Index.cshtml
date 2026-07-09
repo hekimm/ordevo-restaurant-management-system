@@ -1,0 +1,70 @@
+@page "/kitchen"
+@model Ordevo.Web.Pages.Kitchen.IndexModel
+@{
+    ViewData["Title"] = "Mutfak";
+    ViewData["Section"] = "Canlı Servis";
+    var ticketsJson = System.Text.Json.JsonSerializer.Serialize(Model.Tickets,
+        new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+}
+
+@Html.AntiForgeryToken()
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="kds-page">
+    <div class="kds-wrap">
+        <div class="kds-bar">
+            <div class="kds-title">
+                <span class="kds-title-icon"><i class="bi bi-fire"></i></span>
+                <div>
+                    <h1>Mutfak</h1>
+                    <p>Servis akışı</p>
+                </div>
+            </div>
+            <div class="kbar-right">
+                <span class="kbar-chip" id="statCount"><i class="bi bi-receipt"></i> 0 masa</span>
+                <span class="kbar-chip" id="statPending"><i class="bi bi-bell-fill"></i> 0 yeni</span>
+                <span class="kbar-chip" id="statOldest"><i class="bi bi-hourglass-split"></i> --:--</span>
+                <button class="kbar-mute" id="kdsMute" title="Sesli uyarı"><i class="bi bi-volume-up-fill"></i></button>
+                <span class="kds-live" id="kdsLive"><i class="bi bi-broadcast"></i> <span id="kdsLiveText">Bağlanıyor…</span></span>
+            </div>
+        </div>
+
+        <div class="kds-arrival" id="kdsArrivalNotice" hidden>
+            <span><i class="bi bi-bell-fill"></i></span>
+            <strong id="kdsArrivalTitle">Yeni sipariş</strong>
+            <em id="kdsArrivalText">Mutfak bekliyor</em>
+        </div>
+
+        <div class="kds-stations" id="stationTabs"></div>
+
+        <div class="kds-grid kds-feed" id="kdsGrid"></div>
+
+        <div class="kds-empty" id="kdsEmpty" hidden>
+            <i class="bi bi-check2-circle"></i>
+            <h2>Mutfak temiz</h2>
+            <p>Yeni sipariş bekleniyor.</p>
+        </div>
+    </div>
+
+    <div class="kds-undo" id="kdsUndoToast" role="status" aria-live="polite" hidden>
+        <div class="kds-undo-copy">
+            <strong id="kdsUndoTitle">Durum güncellendi</strong>
+            <span id="kdsUndoText">İşlem tamamlandı.</span>
+        </div>
+        <button type="button" class="kds-undo-action" id="kdsUndoBtn">
+            <i class="bi bi-arrow-counterclockwise"></i><span>Geri al</span>
+        </button>
+        <button type="button" class="kds-undo-close" id="kdsUndoClose" aria-label="Bildirimi kapat">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+<script>
+  window.KDS_DATA = @Html.Raw(ticketsJson);
+  window.KDS_HUB = { base: '@Model.HubBase', token: '@Model.HubToken' };
+</script>
+<script src="~/js/kds.js" asp-append-version="true"></script>
+}

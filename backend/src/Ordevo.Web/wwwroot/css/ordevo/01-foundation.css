@@ -1,0 +1,225 @@
+/* 01 - temel: renk/olcu degiskenleri, reset, sol menu ve genel yerlesim */
+:root {
+   
+  --brand: #5c3cbb;           
+  --brand-strong: #4a2c9e;    
+  --brand-ink: #2e1c66;       
+  --brand-tint: #f3f0fc;      
+  --brand-tint-2: #e9e2fa;
+  --accent: #fbd30c;          
+  --accent-ink: #191d1f;      
+
+  --bg: #f7f6fb;              
+  --panel: #ffffff;
+  --ink: #12121a;
+  --muted: #7b7a8c;
+  --line: #eceaf3;            
+  --green: var(--brand);      
+  --stepper: #2fb86b;         
+  --red: #e0334b;
+  --amber: #f5a623;
+  --blue: #376996;
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: none;             
+  --shadow-soft: none;
+  --shadow-pop: 0 10px 30px rgba(92, 60, 187, .16);   
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Nunito, ui-rounded, "SF Pro Rounded", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  height: 100vh;
+  padding: 18px 14px;
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--brand);
+  color: var(--accent);
+  font-weight: 900;
+  font-size: 1.25rem;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+  line-height: 1.1;
+}
+
+.brand small {
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.app-nav {
+  display: grid;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.app-nav a {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #3b3646;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background .12s, color .12s;
+}
+
+.app-nav a:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+
+.app-nav a.active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  padding: 16px 24px;
+  background: rgba(244, 245, 243, .92);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.page-kicker {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.operator {
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+.content-wrap {
+  padding: 22px 24px 36px;
+}
+
+.metric-card,
+.panel,
+.kds-ticket,
+.table-tile,
+.register-tile,
+.product-tile {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.content-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel {
+  padding: 14px;
+  min-width: 0;
+}
+
+.panel-head,
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.count-pill,
+.status-pill,
+.data-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ee;
+  color: #37423d;
+  font-size: .78rem;
+  font-weight: 700;
+}

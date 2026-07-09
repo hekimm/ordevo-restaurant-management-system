@@ -1,0 +1,80 @@
+@page "/login"
+@model LoginModel
+@{
+    Layout = null;
+}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ordevo · Giriş</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <partial name="_OrdevoStyles" />
+</head>
+<body class="auth">
+    <div class="auth-split">
+        <aside class="auth-brand">
+            <div class="auth-blob auth-blob-1"></div>
+            <div class="auth-blob auth-blob-2"></div>
+            <div class="auth-brand-top">
+                <span class="brand-mark lg">O</span>
+                <span class="auth-brand-name">Ordevo</span>
+            </div>
+            <div class="auth-brand-mid">
+                <h1>Restoranınızın<br /><span class="hl">tek ekranı.</span></h1>
+                <p>Adisyon, mutfak, ödeme, stok ve raporlar — hepsi tek, hızlı ve akıcı bir sistemde.</p>
+                <ul class="auth-feats">
+                    <li><span class="ico"><i class="bi bi-receipt"></i></span> Saniyeler içinde adisyon &amp; ödeme</li>
+                    <li><span class="ico"><i class="bi bi-fire"></i></span> Canlı mutfak ekranı (KDS)</li>
+                    <li><span class="ico"><i class="bi bi-graph-up-arrow"></i></span> Gerçek zamanlı satış analizi</li>
+                </ul>
+            </div>
+            <div class="auth-brand-foot">© @DateTime.Now.Year Ordevo · Restaurant OS</div>
+        </aside>
+
+        <main class="auth-form-wrap">
+            <div class="auth-card">
+                <div class="auth-mark-mobile">
+                    <span class="brand-mark">O</span><strong>Ordevo</strong>
+                </div>
+                <h2>Tekrar hoş geldiniz</h2>
+                <p class="auth-sub">Devam etmek için hesabınıza giriş yapın</p>
+
+                <form method="post" class="auth-form">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Error))
+                    {
+                        <div class="auth-alert"><i class="bi bi-exclamation-circle"></i> @Model.Error</div>
+                    }
+
+                    <label class="auth-label" asp-for="Input.TenantSlug">İşletme kodu</label>
+                    <div class="auth-field">
+                        <i class="bi bi-shop"></i>
+                        <input asp-for="Input.TenantSlug" placeholder="ornek: demo" autocomplete="organization" />
+                    </div>
+
+                    <label class="auth-label" asp-for="Input.Email">E-posta</label>
+                    <div class="auth-field">
+                        <i class="bi bi-envelope"></i>
+                        <input asp-for="Input.Email" type="email" placeholder="ornek@ordevo.local" autocomplete="username" />
+                    </div>
+
+                    <label class="auth-label" asp-for="Input.Password">Şifre</label>
+                    <div class="auth-field">
+                        <i class="bi bi-lock"></i>
+                        <input asp-for="Input.Password" type="password" placeholder="••••••••" autocomplete="current-password" />
+                    </div>
+
+                    <button type="submit" class="auth-submit">
+                        Giriş Yap <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

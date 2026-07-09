@@ -1,72 +1,102 @@
-# ⚡ Ordevo - Hızlı Başlangıç
+# Ordevo Hızlı Başlangıç
 
-5 dakikada projeyi ayağa kaldırın!
+Bu hızlı başlangıç yeni ASP.NET Core backend ve Oracle veritabanı için geçerlidir. Eski Supabase kurulumu artık aktif geliştirme yolu değildir.
 
-## 1️⃣ Supabase Kurulumu (2 dakika)
-
-### SQL Editor'de Çalıştır:
-```sql
--- Sırayla çalıştır:
-setup/01-schema.sql
-setup/02-rls-policies.sql
-setup/03-realtime.sql
-setup/04-functions.sql
-```
-
-## 2️⃣ İlk Kullanıcı (1 dakika)
-
-### Uygulamadan Kayıt Ol:
-- Email: m.sirinyilmaz6@gmail.com
-- Şifre: (güçlü şifre)
-- Restoran: (restoran adı)
-
-## 3️⃣ Organization ID Al (30 saniye)
-
-```sql
-SELECT organization_id 
-FROM profiles 
-WHERE email = 'm.sirinyilmaz6@gmail.com';
-```
-
-Sonuç: `73cdab97-03c7-466e-91c9-f7c8c18c1f2f` ✅ (Zaten ayarlandı!)
-
-## 4️⃣ Garson Ekle (1 dakika)
-
-```sql
--- users/01-add-waiter.sql aç
--- Değişkenleri düzenle:
-v_email := 'garson@ordevo.com';
-v_password := 'garson123';
-v_full_name := 'Garson Adı';
--- Çalıştır
-```
-
-## 5️⃣ Uygulamayı Başlat (30 saniye)
+## 1. Altyapıyı Başlat
 
 ```bash
-# Electron App
-npm run dev
+cd deploy
+docker compose up -d
+```
 
-# Mobile App
-cd mobile-new
+Oracle container ilk açılışta birkaç dakika sürebilir. Durumu görmek için:
+
+```bash
+docker compose ps
+```
+
+`oracle` servisi healthy olduktan sonra migration adımına geç.
+
+## 2. Oracle Schema'yı Kur
+
+```bash
+./db-migrate.sh migrate
+```
+
+Migration durumu için:
+
+```bash
+./db-migrate.sh info
+```
+
+Bu komutlar Flyway container'ını kullanır ve `backend/db/migrations` altındaki Oracle SQL dosyalarını `ORDEVO` schema'sına uygular.
+
+## 3. API'yi Çalıştır
+
+```bash
+cd ../backend
+dotnet run --project src/Ordevo.Api
+```
+
+Kontrol:
+
+```bash
+curl http://localhost:5144/
+curl http://localhost:5144/health/ready
+```
+
+İlk açılışta demo tenant ve owner kullanıcı seed edilir.
+
+## 4. Web UI'yi Çalıştır
+
+Ayrı bir terminalde:
+
+```bash
+cd backend
+dotnet run --project src/Ordevo.Web
+```
+
+Web UI API'ye `OrdevoApi:BaseUrl` ayarı üzerinden bağlanır.
+
+## 5. Mobile Uygulamayı Çalıştır
+
+```bash
+cd mobile
+npm install
 npm start
 ```
 
-## ✅ Tamamlandı!
+Mobil uygulama artık Supabase URL ve anon key kullanmaz. API adresi için `EXPO_PUBLIC_API_BASE_URL`, tenant için `EXPO_PUBLIC_TENANT_SLUG` kullanılır. Varsayılan geliştirme değerleri `http://localhost:5144` ve `demo` şeklindedir.
 
-Artık kullanmaya hazırsınız:
-- 🖥️ Electron App: http://localhost:5173
-- 📱 Mobile App: Expo Go ile QR kodu tarat
+## 6. WPF Desktop
 
-## 📚 Detaylı Dokümantasyon
+WPF uygulaması Windows üzerinde çalışır.
 
-- `DATABASE-SETUP.md` - Tam kurulum rehberi
-- `setup/README.md` - Database detayları
-- `users/README.md` - Kullanıcı yönetimi
-- `maintenance/README.md` - Bakım scriptleri
+```powershell
+cd backend\src\Ordevo.Desktop.Wpf
+dotnet run
+```
 
-## 🆘 Sorun mu var?
+Tek dosya EXE almak için:
 
-1. RLS kontrolü: `setup/02-rls-policies.sql`
-2. Realtime kontrolü: `setup/03-realtime.sql`
-3. Kullanıcı kontrolü: `users/02-list-users.sql`
+```powershell
+dotnet publish .\Ordevo.Desktop.Wpf.csproj -p:PublishProfile=win-x64-singlefile
+```
+
+Publish çıktısı:
+
+```text
+backend\src\Ordevo.Desktop.Wpf\bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\Ordevo.Desktop.exe
+```
+
+## Giriş Bilgileri
+
+| Alan | Değer |
+| --- | --- |
+| Tenant | `demo` |
+| Email | `owner@ordevo.local` |
+| Şifre | `Owner_Dev_2026!` |
+
+## Eski Sürümden Farkı
+
+Eski hızlı başlangıç Supabase SQL Editor, Electron desktop ve doğrudan Supabase client ayarlarıyla çalışıyordu. Yeni akışta önce Oracle container açılır, sonra Flyway migration'ları uygulanır, ardından ASP.NET Core API başlatılır. Web, WPF ve mobile istemciler veritabanına değil API'ye bağlanır.

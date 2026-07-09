@@ -1,0 +1,213 @@
+@page "/dashboard"
+@model DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Section"] = "Operasyon";
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Günaydın" : hour < 18 ? "İyi çalışmalar" : "İyi akşamlar";
+    var tr = new System.Globalization.CultureInfo("tr-TR");
+    var avgTicket = Model.Daily?.AvgTicket ?? 0;
+    var activeTables = Model.Tables.Where(x => x.IsActive).OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToList();
+    var busyCount = activeTables.Count(t => Model.OpenByTable.ContainsKey(t.Id));
+    var occRate = activeTables.Count == 0 ? 0 : (int)Math.Round(100.0 * busyCount / activeTables.Count);
+    var sectionOrder = Model.Sections.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToList();
+    var sectionIds = sectionOrder.Select(x => x.Id).ToHashSet();
+    var unassignedTables = activeTables
+        .Where(t => string.IsNullOrWhiteSpace(t.SectionId) || !sectionIds.Contains(t.SectionId))
+        .ToList();
+    var tableAreas = new List<(string Id, string Name, List<TableDto> Tables)>();
+    if (unassignedTables.Count > 0)
+    {
+        tableAreas.Add(("__salon", "Salon", unassignedTables));
+    }
+    foreach (var area in sectionOrder)
+    {
+        var areaTables = activeTables.Where(t => t.SectionId == area.Id).ToList();
+        if (areaTables.Count > 0)
+        {
+            tableAreas.Add((area.Id, area.Name, areaTables));
+        }
+    }
+}
+<partial name="Shared/_Alerts" model="Model.Errors" />
+
+<div class="dash-hero">
+    <div>
+        <h2 class="dash-hello">@greeting</h2>
+        <p class="dash-date">@DateTime.Now.ToString("dd MMMM yyyy, dddd", tr)</p>
+    </div>
+    <div class="quick-actions">
+        <a asp-page="/Tables/Index" class="qa qa-primary"><i class="bi bi-plus-lg"></i> Yeni Adisyon</a>
+        <a asp-page="/Tables/Index" class="qa"><i class="bi bi-grid-3x3-gap"></i> Masalar</a>
+        <a asp-page="/SalesAnalysis/Index" class="qa"><i class="bi bi-graph-up-arrow"></i> Satış Analizi</a>
+        <a asp-page="/Kitchen/Index" class="qa"><i class="bi bi-fire"></i> Mutfak</a>
+        <a asp-page="/Shift/Index" class="qa"><i class="bi bi-person-vcard"></i> Personel - Cihaz</a>
+    </div>
+</div>
+
+<div class="kpi-strip">
+    <div class="kpi"><span class="kpi-ico green"><i class="bi bi-cash-stack"></i></span>
+        <div><small>Bugünkü ciro</small><strong>@UiFormat.Money(Model.Daily?.Revenue ?? 0)</strong></div></div>
+    <div class="kpi"><span class="kpi-ico purple"><i class="bi bi-grid-3x3-gap"></i></span>
+        <div><small>Salon doluluğu</small><strong>%@occRate <em>· @busyCount / @activeTables.Count masa</em></strong></div></div>
+    <div class="kpi"><span class="kpi-ico blue"><i class="bi bi-basket"></i></span>
+        <div><small>Ort. sepet</small><strong>@UiFormat.Money(avgTicket)</strong></div></div>
+    <div class="kpi"><span class="kpi-ico red"><i class="bi bi-fire"></i></span>
+        <div><small>Mutfakta bekleyen</small><strong>@Model.KitchenItemCount <em>kalem</em></strong></div></div>
+</div>
+
+<div class="cockpit">
+    <section class="panel table-distribution">
+        <div class="panel-head">
+            <h2>Masa dağılımı</h2>
+            <div class="floor-legend cinema-legend">
+                <span><i class="dot free"></i> Boş</span>
+                <span><i class="dot busy"></i> Dolu</span>
+                <span><i class="dot reserved"></i> Rezerve</span>
+                <a asp-page="/Tables/Index" class="btn btn-outline-secondary see-all">Salon planı <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+        @if (activeTables.Count == 0)
+        {
+            <p class="empty-hint">Henüz masa tanımlanmamış. <a asp-page="/Tables/Index">Masalar</a> ekranından ekleyin.</p>
+        }
+        else
+        {
+            <div class="venue-console">
+                <div class="venue-tabs" role="tablist" aria-label="Masa bölümleri">
+                    @for (var i = 0; i < tableAreas.Count; i++)
+                    {
+                        var area = tableAreas[i];
+                        var areaBusy = area.Tables.Count(t => Model.OpenByTable.ContainsKey(t.Id));
+                        var areaReserved = area.Tables.Count(t => !Model.OpenByTable.ContainsKey(t.Id)
+                            && string.Equals(t.Status, "reserved", StringComparison.OrdinalIgnoreCase));
+                        var areaRate = area.Tables.Count == 0 ? 0 : (int)Math.Round(100.0 * areaBusy / area.Tables.Count);
+                        var tabId = $"venue-area-{i}";
+                        <button class="venue-tab @(i == 0 ? "active" : "") area-@DashboardModel.AreaKind(area.Name)" id="@tabId-tab"
+                                type="button" role="tab" data-bs-toggle="tab" data-bs-target="#@tabId"
+                                aria-controls="@tabId" aria-selected="@(i == 0 ? "true" : "false")">
+                            <span class="venue-tab-icon"><i class="bi @DashboardModel.AreaIcon(area.Name)"></i></span>
+                            <span class="venue-tab-copy">
+                                <strong>@area.Name</strong>
+                                <small>@areaBusy dolu · @(area.Tables.Count - areaBusy - areaReserved) boş</small>
+                            </span>
+                            <em>%@areaRate</em>
+                        </button>
+                    }
+                </div>
+
+                <div class="tab-content venue-stage-set">
+                    @for (var i = 0; i < tableAreas.Count; i++)
+                    {
+                        var area = tableAreas[i];
+                        var areaBusy = area.Tables.Count(t => Model.OpenByTable.ContainsKey(t.Id));
+                        var areaReserved = area.Tables.Count(t => !Model.OpenByTable.ContainsKey(t.Id)
+                            && string.Equals(t.Status, "reserved", StringComparison.OrdinalIgnoreCase));
+                        var areaFree = Math.Max(0, area.Tables.Count - areaBusy - areaReserved);
+                        var areaRate = area.Tables.Count == 0 ? 0 : (int)Math.Round(100.0 * areaBusy / area.Tables.Count);
+                        var tabId = $"venue-area-{i}";
+                        var rowIndex = 0;
+                        <section class="tab-pane fade @(i == 0 ? "show active" : "")" id="@tabId" role="tabpanel" aria-labelledby="@tabId-tab" tabindex="0">
+                            <div class="venue-plan area-@DashboardModel.AreaKind(area.Name)">
+                                <header class="venue-plan-head">
+                                    <div>
+                                        <span><i class="bi @DashboardModel.AreaIcon(area.Name)"></i>@area.Name</span>
+                                        <strong>@areaBusy / @area.Tables.Count masa dolu</strong>
+                                    </div>
+                                    <div class="venue-plan-stats">
+                                        <em>@areaFree boş</em>
+                                        <em>@areaReserved rezerve</em>
+                                        <em>%@areaRate doluluk</em>
+                                    </div>
+                                </header>
+
+                                <div class="venue-screen">
+                                    <span>GİRİŞ / KARŞILAMA</span>
+                                </div>
+
+                                <div class="venue-map">
+                                    <div class="venue-aisle left"><i class="bi bi-arrow-down"></i><span>Geçiş</span></div>
+                                    <div class="venue-rows">
+                                        @foreach (var row in area.Tables.Chunk(8))
+                                        {
+                                            var rowLabel = DashboardModel.RowLabel(rowIndex++);
+                                            <div class="venue-row">
+                                                <span class="venue-row-label">@rowLabel</span>
+                                                <div class="venue-seat-line">
+                                                    @foreach (var t in row)
+                                                    {
+                                                        Model.OpenByTable.TryGetValue(t.Id, out var openOrder);
+                                                        var busy = openOrder is not null;
+                                                        var reserved = !busy && string.Equals(t.Status, "reserved", StringComparison.OrdinalIgnoreCase);
+                                                        var status = busy ? "busy" : reserved ? "reserved" : "free";
+                                                        var statusText = busy ? "Dolu" : reserved ? "Rezerve" : "Boş";
+                                                        var href = openOrder is not null ? $"/tables?orderId={Uri.EscapeDataString(openOrder.Id)}" : $"/tables?tableId={Uri.EscapeDataString(t.Id)}";
+                                                        <a href="@href" class="venue-seat @status" title="@t.Name — @statusText">
+                                                            <span class="seat-back"></span>
+                                                            <span class="seat-name">@t.Name</span>
+                                                            @if (openOrder is not null)
+                                                            {
+                                                                <span class="seat-extra">@DashboardModel.Elapsed(openOrder.OpenedAt)</span>
+                                                                <span class="seat-total">@UiFormat.Money(openOrder.Total)</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="seat-extra">@statusText</span>
+                                                            }
+                                                        </a>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="venue-aisle right"><i class="bi bi-arrow-down"></i><span>Servis</span></div>
+                                </div>
+
+                                <div class="venue-bottom">
+                                    <span><i class="bi bi-door-open"></i> Çıkış</span>
+                                    <div class="occ-track"><div class="occ-fill" style="width:@(areaRate)%"></div></div>
+                                    <strong>%@areaRate</strong>
+                                </div>
+                            </div>
+                        </section>
+                    }
+                </div>
+
+                <div class="occ-bar">
+                    <div class="occ-track"><div class="occ-fill" style="width:@(occRate)%"></div></div>
+                    <div class="occ-meta"><strong>%@occRate</strong> genel doluluk · <span>@busyCount / @activeTables.Count masa dolu</span></div>
+                </div>
+            </div>
+        }
+    </section>
+
+    <div class="cockpit-side">
+        <section class="panel">
+            <div class="panel-head">
+                <h2>Mutfak kuyruğu</h2>
+                <a asp-page="/Kitchen/Index" class="btn btn-outline-secondary see-all">Aç <i class="bi bi-arrow-right"></i></a>
+            </div>
+            @if (Model.KitchenTickets.Count == 0)
+            {
+                <p class="empty-hint">Bekleyen sipariş yok.</p>
+            }
+            else
+            {
+                <div class="oo-list">
+                    @foreach (var ticket in Model.KitchenTickets.Take(6))
+                    {
+                        var mins = ticket.ElapsedSeconds / 60;
+                        <a asp-page="/Kitchen/Index" class="oo @(mins >= 15 ? "late" : "")">
+                            <span class="oo-no">#@ticket.OrderNo</span>
+                            <span class="oo-mid">
+                                <span class="oo-table">@(ticket.TableName ?? "Paket")</span>
+                                <span class="oo-time"><i class="bi bi-clock"></i> @mins dk</span>
+                            </span>
+                            <span class="oo-amt">@ticket.Items.Count kalem</span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+</div>

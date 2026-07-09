@@ -1,0 +1,13 @@
+bin/
+obj/
+*.user
+
+.idea/
+.vs/
+
+appsettings.*.Local.json
+*.env
+.env
+
+TestResults/
+[Cc]overage*/

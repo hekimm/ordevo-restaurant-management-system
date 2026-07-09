@@ -1,0 +1,193 @@
+/* 02 - ayar toggle'lari, cms kartlari, segmented butonlar, ortak form alanlari */
+.status-pill.warn {
+  background: #fff4db;
+  color: #7d520e;
+}
+
+.status-pill.muted {
+  background: #f0f1f0;
+  color: #7b837e;
+}
+
+.settings-lock {
+  max-width: 520px;
+}
+
+.settings-unlock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.toggle-list {
+  display: grid;
+  gap: 8px;
+}
+
+.toggle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.toggle-row strong,
+.toggle-row small,
+.toggle-row code {
+  display: block;
+}
+
+.toggle-row strong {
+  font-weight: 800;
+}
+
+.toggle-row small {
+  color: var(--muted);
+}
+
+.toggle-row code {
+  margin-top: 3px;
+  color: var(--brand);
+  font-size: .78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms-list,
+.cms-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.cms-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.cms-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cms-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.cms-card-head strong,
+.cms-card-head small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cms-card-head small {
+  color: var(--muted);
+}
+
+.cms-card details {
+  margin-top: 8px;
+}
+
+.cms-card summary {
+  color: var(--brand);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.cms-actions,
+.cms-delete {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.segmented a,
+.segmented button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.segmented .active,
+.segmented a.active,
+.segmented button.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.kds-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.kds-item small {
+  grid-column: 2 / -1;
+  color: var(--muted);
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 260px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 2.4rem;
+}
+
+.empty-state.compact {
+  min-height: 180px;
+}
+
+.dense-form .form-label,
+.compact-forms .form-label {
+  margin-bottom: 3px;
+}
+
+.receipt-preview {
+  min-height: 360px;
+  max-height: 520px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfb;
+  color: #18211d;
+  font: 600 .88rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.copies-input {
+  min-width: 64px;
+}

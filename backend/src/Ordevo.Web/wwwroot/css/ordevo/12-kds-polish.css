@@ -1,0 +1,145 @@
+/* 12 - kds son rotuslar (eski override'lar burada birikmis) */
+/* eski kds gorunumunden kalan ufak duzeltmeler */
+.kds-page .kds-bar {
+  border-left: 1px solid var(--kds-line);
+  box-shadow: none;
+}
+
+.kds-page .kds-title-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--kds-yellow);
+  font-size: 1.08rem;
+}
+
+.kds-page .kds-ticket-card {
+  border-color: #ddd8c8;
+  box-shadow: none;
+}
+
+.kds-page .kds-ticket-card::before {
+  display: none;
+  content: none;
+}
+
+.kds-page .kds-ticket-card.has-extra,
+.kds-page .kds-ticket-card.tone-warn,
+.kds-page .kds-ticket-card.tone-late {
+  border-color: #d8d1bd;
+  box-shadow: none;
+}
+
+.kds-page .kds-ticket-head,
+.kds-page .stage-received .kds-ticket-head,
+.kds-page .stage-received.has-extra .kds-ticket-head,
+.kds-page .stage-cooking .kds-ticket-head,
+.kds-page .stage-cooking.tone-warn .kds-ticket-head,
+.kds-page .stage-cooking.tone-late .kds-ticket-head,
+.kds-page .stage-received.tone-late .kds-ticket-head,
+.kds-page .stage-ready .kds-ticket-head {
+  padding-left: 10px;
+}
+
+.kds-page .kds-timer,
+.kds-page .tone-warn .kds-timer,
+.kds-page .tone-late .kds-timer {
+  min-width: 66px;
+  border: 1px solid #e3ddc8;
+  background: #fff;
+  color: var(--kds-ink);
+}
+
+.kds-page .tone-warn .kds-timer {
+  border-color: #e7ca51;
+}
+
+.kds-page .tone-late .kds-timer {
+  border-color: #d88980;
+  color: var(--kds-danger);
+}
+
+.kds-page .kds-status-row {
+  padding-left: 10px;
+  background: #fff;
+}
+
+.kds-page .kds-status-row > em {
+  border: 1px solid #e3aaa2;
+  background: #fff;
+  color: var(--kds-danger);
+}
+
+.kds-page .kds-item {
+  padding-left: 10px;
+}
+
+.kds-page .kds-item.is-pending,
+.kds-page .kds-item.is-extra,
+.kds-page .kds-item.is-ready {
+  background: #fff;
+}
+
+.kds-page .kds-item.is-extra {
+  box-shadow: inset 0 0 0 999px rgba(255, 211, 0, .08);
+}
+
+.kds-page .kds-qty,
+.kds-page .kds-item.is-pending .kds-qty,
+.kds-page .kds-item.is-extra .kds-qty,
+.kds-page .kds-item.is-ready .kds-qty {
+  width: 30px;
+  min-width: 30px;
+  height: 28px;
+  border: 1px solid #e0daca;
+  background: #faf9f4;
+  color: var(--kds-ink);
+}
+
+.kds-page .kds-item-line span,
+.kds-page .kds-item.is-extra .kds-item-line span,
+.kds-page .kds-item.is-ready .kds-item-line span {
+  border: 1px solid #e1daca;
+  background: #fff;
+  color: var(--kds-muted);
+}
+
+.kds-page .kds-item.is-pending .kds-item-line span {
+  border-color: #d9cff8;
+  color: var(--kds-purple);
+}
+
+.kds-page .kds-item.is-extra .kds-item-line span {
+  border-color: #e1c100;
+  color: #5b4900;
+}
+
+.kds-page .kds-item.is-ready .kds-item-line span {
+  border-color: #b7dec8;
+  color: var(--kds-ready);
+}
+
+.kds-page .kds-ticket-actions {
+  padding-left: 10px;
+}
+
+.kds-page .kds-primary-action {
+  min-height: 38px;
+  border: 1px solid var(--kds-purple);
+  background: var(--kds-purple);
+  font-size: .84rem;
+}
+
+.kds-page .stage-received.has-extra .kds-primary-action,
+.kds-page .kds-primary-action[data-action="ready"] {
+  border-color: #e0bd00;
+  background: var(--kds-yellow);
+  color: var(--kds-ink);
+}
+
+.kds-page .kds-primary-action[data-action="serve"] {
+  border-color: var(--kds-ready);
+  background: var(--kds-ready);
+  color: #fff;
+}

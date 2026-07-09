@@ -1,0 +1,93 @@
+
+name: ordevo
+
+services:
+  oracle:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: ordevo-oracle
+    environment:
+      ORACLE_PWD: ${ORACLE_PWD:-Oracle_Dev_2026}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./oracle-init:/opt/oracle/scripts/setup:ro
+    healthcheck:
+      test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 120s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ordevo-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ordevo-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-ordevo}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-ordevo_dev}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: ordevo-minio
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-ordevo}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASS:-ordevo_dev_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  seq:
+    image: datalust/seq:latest
+    container_name: ordevo-seq
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
+    ports:
+      - "5341:5341"
+      - "8081:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+
+volumes:
+  oracle-data:
+  redis-data:
+  rabbitmq-data:
+  minio-data:
+  seq-data:

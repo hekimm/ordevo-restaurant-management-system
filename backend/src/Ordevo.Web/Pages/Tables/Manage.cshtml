@@ -1,0 +1,163 @@
+@page "/tables/manage"
+@model Ordevo.Web.Pages.Tables.ManageModel
+@{
+    ViewData["Title"] = "Masa CMS";
+    ViewData["Section"] = "Yerleşim";
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="toolbar">
+    <a class="btn btn-sm btn-outline-secondary" asp-page="/Tables/Index"><i class="bi bi-chevron-left"></i><span>POS</span></a>
+</div>
+
+<div class="content-grid two-col">
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Bölüm ekle</h2>
+            <span class="count-pill">@Model.Sections.Count bölüm</span>
+        </div>
+        <form method="post" asp-page-handler="Section" class="dense-form">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label small fw-bold">Ad</label>
+                    <input class="form-control form-control-sm" asp-for="Section.Name" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Sıra</label>
+                    <input type="number" class="form-control form-control-sm" asp-for="Section.SortOrder" />
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-sm btn-dark" type="submit"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
+        </form>
+
+        <div class="cms-list mt-3">
+            @foreach (var area in Model.Sections.OrderBy(x => x.SortOrder))
+            {
+                <article class="cms-card">
+                    <div class="cms-card-head">
+                        <i class="bi bi-layout-three-columns"></i>
+                        <div>
+                            <strong>@area.Name</strong>
+                            <small>@Model.Tables.Count(x => x.SectionId == area.Id) masa · sıra @area.SortOrder</small>
+                        </div>
+                    </div>
+                    <details>
+                        <summary>Düzenle</summary>
+                        <form method="post" asp-page-handler="Section" class="dense-form mt-2">
+                            <input type="hidden" name="Section.Id" value="@area.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8"><input class="form-control form-control-sm" name="Section.Name" value="@area.Name" /></div>
+                                <div class="col-md-2"><input type="number" class="form-control form-control-sm" name="Section.SortOrder" value="@area.SortOrder" /></div>
+                                <div class="col-md-2 text-end">
+                                    <button class="btn btn-sm btn-outline-dark" type="submit"><i class="bi bi-save"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                        <form method="post" asp-page-handler="DeleteSection" asp-route-id="@area.Id" class="cms-delete">
+                            <button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="Bölüm silinsin mi?"><i class="bi bi-trash"></i><span>Sil</span></button>
+                        </form>
+                    </details>
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Masa ekle</h2>
+            <span class="count-pill">@Model.Tables.Count masa</span>
+        </div>
+        <form method="post" asp-page-handler="Table" class="dense-form">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Bölüm</label>
+                    <select class="form-select form-select-sm" asp-for="Table.SectionId">
+                        <option value="">Genel</option>
+                        @foreach (var area in Model.Sections.OrderBy(x => x.SortOrder))
+                        {
+                            <option value="@area.Id">@area.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Masa</label>
+                    <input class="form-control form-control-sm" asp-for="Table.Name" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">
+                        <span class="visually-hidden">Kapasite</span>
+                        <i class="bi bi-people"></i>
+                    </label>
+                    <input type="number" min="1" class="form-control form-control-sm" asp-for="Table.Capacity" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Sıra</label>
+                    <input type="number" class="form-control form-control-sm" asp-for="Table.SortOrder" />
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <label class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" asp-for="Table.IsActive" />
+                    </label>
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button class="btn btn-sm btn-dark" type="submit"><i class="bi bi-plus-lg"></i><span>Masa</span></button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<section class="panel mt-3">
+    <div class="panel-head">
+        <h2>Masalar</h2>
+        <span class="count-pill">@Model.Tables.Count kayıt</span>
+    </div>
+    <div class="cms-grid">
+        @foreach (var table in Model.Tables.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+        {
+            var sectionName = Model.Sections.FirstOrDefault(x => x.Id == table.SectionId)?.Name ?? "Genel";
+            <article class="cms-card">
+                <div class="cms-card-head">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <div>
+                        <strong>@table.Name</strong>
+                        <small>@sectionName · @table.Status</small>
+                    </div>
+                    <span class="status-pill @(table.IsActive ? "" : "muted")">@(table.IsActive ? "aktif" : "pasif")</span>
+                </div>
+                <details>
+                    <summary>Düzenle</summary>
+                    <form method="post" asp-page-handler="Table" class="dense-form mt-2">
+                        <input type="hidden" name="Table.Id" value="@table.Id" />
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <select class="form-select form-select-sm" name="Table.SectionId">
+                                    <option value="">Genel</option>
+                                    @foreach (var area in Model.Sections.OrderBy(x => x.SortOrder))
+                                    {
+                                        <option value="@area.Id" selected="@(area.Id == table.SectionId)">@area.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-3"><input class="form-control form-control-sm" name="Table.Name" value="@table.Name" /></div>
+                            <div class="col-md-2"><input type="number" min="1" class="form-control form-control-sm" name="Table.Capacity" value="@table.Capacity" /></div>
+                            <div class="col-md-2"><input type="number" class="form-control form-control-sm" name="Table.SortOrder" value="@table.SortOrder" /></div>
+                            <div class="col-md-1">
+                                <input type="hidden" name="Table.IsActive" value="false" />
+                                <input class="form-check-input" type="checkbox" name="Table.IsActive" value="true" checked="@table.IsActive" />
+                            </div>
+                        </div>
+                        <div class="cms-actions">
+                            <button class="btn btn-sm btn-outline-dark" type="submit"><i class="bi bi-save"></i><span>Kaydet</span></button>
+                        </div>
+                    </form>
+                    <form method="post" asp-page-handler="DeleteTable" asp-route-id="@table.Id" class="cms-delete">
+                        <button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="Masa silinsin mi?"><i class="bi bi-trash"></i><span>Sil</span></button>
+                    </form>
+                </details>
+            </article>
+        }
+    </div>
+</section>

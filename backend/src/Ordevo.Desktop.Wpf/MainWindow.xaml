@@ -1,0 +1,575 @@
+<Window x:Class="Ordevo.Desktop.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ordevo Desktop" Height="860" Width="1360"
+        MinHeight="760" MinWidth="1120"
+        Background="#f4f5f3">
+    <Grid>
+        <Border x:Name="LoginPanel" Width="430" Padding="26" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                    <Border Width="42" Height="42" CornerRadius="13" Background="{StaticResource BrandBrush}">
+                        <TextBlock Text="O" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="22"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Ordevo" FontSize="22" FontWeight="Bold" />
+                        <TextBlock Text="WPF Desktop EXE" Foreground="{StaticResource MutedBrush}" FontWeight="SemiBold" />
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="Tenant" FontWeight="SemiBold" />
+                <TextBox x:Name="TenantBox" Text="demo" Margin="0,5,0,12" />
+
+                <TextBlock Text="E-posta" FontWeight="SemiBold" />
+                <TextBox x:Name="EmailBox" Text="owner@ordevo.local" Margin="0,5,0,12" />
+
+                <TextBlock Text="Şifre" FontWeight="SemiBold" />
+                <PasswordBox x:Name="PasswordBox" Margin="0,5,0,16" />
+
+                <Button x:Name="LoginButton" Content="Giriş" Background="{StaticResource BrandBrush}" Foreground="White"
+                        Click="LoginButton_Click" />
+                <TextBlock x:Name="LoginError" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                <TextBlock Text="{Binding ApiBaseText}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,18,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Grid x:Name="ShellPanel" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="72" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="34" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
+                <DockPanel LastChildFill="True" Margin="18,0">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UserName}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="Yenile" Click="RefreshButton_Click" />
+                        <Button Content="Çıkış" Click="LogoutButton_Click" />
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Ordevo Desktop" FontSize="22" FontWeight="Bold" />
+                        <TextBlock Text="{Binding ApiBaseText}" Foreground="{StaticResource MutedBrush}" FontWeight="SemiBold" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TabControl x:Name="MainTabs" Grid.Row="1" Margin="14" SelectionChanged="MainTabs_SelectionChanged">
+                <TabItem Header="Dashboard" Tag="dashboard">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="4">
+                            <ItemsControl ItemsSource="{Binding Metrics}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="5" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                                                CornerRadius="8" Padding="14" MinHeight="104" Margin="4">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource MutedBrush}" FontWeight="Bold" />
+                                                <TextBlock Text="{Binding Value}" FontSize="24" FontWeight="Bold" Margin="0,6,0,2" />
+                                                <TextBlock Text="{Binding Detail}" Foreground="{StaticResource MutedBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <GroupBox Header="Açık adisyonlar">
+                                    <DataGrid ItemsSource="{Binding OpenOrders}" MinHeight="280" />
+                                </GroupBox>
+                                <GroupBox Header="Mutfak kalemleri" Grid.Column="1">
+                                    <DataGrid ItemsSource="{Binding KitchenLines}" MinHeight="280" />
+                                </GroupBox>
+                                <GroupBox Grid.Column="2" Header="Entegrasyon/Senkron">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <DataGrid ItemsSource="{Binding IntegrationEvents}" MinHeight="130" />
+                                        <DataGrid Grid.Row="1" ItemsSource="{Binding PendingMutations}" MinHeight="130" Margin="0,6,0,0" />
+                                    </Grid>
+                                </GroupBox>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="Masalar" Tag="tables">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="2*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Bölüm Ekle" Click="AddSectionButton_Click" />
+                            <Button Content="Masa Ekle" Click="AddTableButton_Click" />
+                            <Button Content="Masa Düzenle" Click="EditTableButton_Click" />
+                            <Button Content="Masa Sil" Style="{StaticResource DangerButton}" Click="DeleteTableButton_Click" />
+                        </WrapPanel>
+                        <GroupBox Grid.Row="1" Header="Masalar">
+                            <DataGrid x:Name="TablesGrid" ItemsSource="{Binding Tables}" />
+                        </GroupBox>
+                        <GroupBox Grid.Row="2" Header="Bölümler">
+                            <DataGrid x:Name="SectionsGrid" ItemsSource="{Binding Sections}" />
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Adisyon" Tag="orders">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="240" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Adisyon Aç" Click="OpenOrderButton_Click" />
+                            <Button Content="Ürün Ekle" Click="AddOrderItemButton_Click" />
+                            <Button Content="Adet Değiştir" Click="SetQuantityButton_Click" />
+                            <Button Content="İkram" Click="CompItemButton_Click" />
+                            <Button Content="İptal Kalem" Style="{StaticResource DangerButton}" Click="VoidItemButton_Click" />
+                            <Button Content="İndirim" Click="DiscountButton_Click" />
+                            <Button Content="Transfer" Click="TransferOrderButton_Click" />
+                            <Button Content="Ödeme Al" Click="AddPaymentButton_Click" />
+                            <Button Content="Kapat" Click="CloseOrderButton_Click" />
+                            <Button Content="Adisyon İptal" Style="{StaticResource DangerButton}" Click="CancelOrderButton_Click" />
+                        </WrapPanel>
+                        <GroupBox Grid.Row="1" Header="Açık adisyonlar">
+                            <DataGrid x:Name="OrdersGrid" ItemsSource="{Binding Orders}" SelectionChanged="OrdersGrid_SelectionChanged" />
+                        </GroupBox>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="{Binding SelectedOrderText}">
+                                <DataGrid x:Name="OrderItemsGrid" ItemsSource="{Binding OrderItems}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="{Binding PaymentText}">
+                                <DataGrid x:Name="PaymentsGrid" ItemsSource="{Binding Payments}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Mutfak" Tag="kitchen">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="2*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Hazırlanıyor" Click="KitchenPreparingButton_Click" />
+                            <Button Content="Hazır" Click="KitchenReadyButton_Click" />
+                            <Button Content="Servis" Click="KitchenServedButton_Click" />
+                            <Button Content="Order Bump" Click="KitchenBumpButton_Click" />
+                            <Button Content="İstasyon Ekle" Click="AddStationButton_Click" />
+                            <Button Content="İstasyon Düzenle" Click="EditStationButton_Click" />
+                            <Button Content="İstasyon Sil" Style="{StaticResource DangerButton}" Click="DeleteStationButton_Click" />
+                        </WrapPanel>
+                        <GroupBox Grid.Row="1" Header="KDS">
+                            <DataGrid x:Name="KitchenGrid" ItemsSource="{Binding KitchenLines}" />
+                        </GroupBox>
+                        <GroupBox Grid.Row="2" Header="İstasyonlar">
+                            <DataGrid x:Name="StationsGrid" ItemsSource="{Binding Stations}" />
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Menü" Tag="menu">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="230" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Kategori Ekle" Click="AddCategoryButton_Click" />
+                            <Button Content="Kategori Düzenle" Click="EditCategoryButton_Click" />
+                            <Button Content="Kategori Sil" Style="{StaticResource DangerButton}" Click="DeleteCategoryButton_Click" />
+                            <Button Content="Ürün Ekle" Click="AddMenuItemButton_Click" />
+                            <Button Content="Ürün Düzenle" Click="EditMenuItemButton_Click" />
+                            <Button Content="Ürün Sil" Style="{StaticResource DangerButton}" Click="DeleteMenuItemButton_Click" />
+                            <Button Content="Barkod" Click="AddBarcodeButton_Click" />
+                            <Button Content="Modifier Grup" Click="AddModifierGroupButton_Click" />
+                            <Button Content="Modifier" Click="AddModifierButton_Click" />
+                            <Button Content="Grup Ata" Click="AssignModifierGroupsButton_Click" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Kategoriler">
+                                <DataGrid x:Name="CategoriesGrid" ItemsSource="{Binding Categories}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Ürünler">
+                                <DataGrid x:Name="MenuItemsGrid" ItemsSource="{Binding MenuItems}" />
+                            </GroupBox>
+                        </Grid>
+                        <GroupBox Grid.Row="2" Header="Modifier grupları ve seçenekler">
+                            <DataGrid x:Name="ModifiersGrid" ItemsSource="{Binding ModifierRows}" />
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="CRM" Tag="crm">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="240" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Müşteri Ekle" Click="AddCustomerButton_Click" />
+                            <Button Content="Müşteri Düzenle" Click="EditCustomerButton_Click" />
+                            <Button Content="Adres Ekle" Click="AddCustomerAddressButton_Click" />
+                            <Button Content="Blokla" Style="{StaticResource DangerButton}" Click="BlockCustomerButton_Click" />
+                            <Button Content="Blok Kaldır" Click="UnblockCustomerButton_Click" />
+                            <Button Content="Rezervasyon" Click="AddReservationButton_Click" />
+                            <Button Content="Rez. Durum" Click="ReservationStatusButton_Click" />
+                            <Button Content="Kampanya" Click="AddCampaignButton_Click" />
+                            <Button Content="Kurye" Click="AddCourierButton_Click" />
+                            <Button Content="Kurye Durum" Click="CourierStatusButton_Click" />
+                            <Button Content="Zone" Click="AddDeliveryZoneButton_Click" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Müşteriler">
+                                <DataGrid x:Name="CustomersGrid" ItemsSource="{Binding Customers}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Rezervasyonlar">
+                                <DataGrid x:Name="ReservationsGrid" ItemsSource="{Binding Reservations}" />
+                            </GroupBox>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Kampanyalar">
+                                <DataGrid x:Name="CampaignsGrid" ItemsSource="{Binding Campaigns}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Kuryeler">
+                                <DataGrid x:Name="CouriersGrid" ItemsSource="{Binding Couriers}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="2" Header="Teslimat/Zone">
+                                <DataGrid x:Name="DeliveryZonesGrid" ItemsSource="{Binding DeliveryZones}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Stok" Tag="inventory">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="220" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Birim Ekle" Click="AddUnitButton_Click" />
+                            <Button Content="Stok Ekle" Click="AddStockItemButton_Click" />
+                            <Button Content="Stok Düzenle" Click="EditStockItemButton_Click" />
+                            <Button Content="Stok Ayarla" Click="AdjustStockButton_Click" />
+                            <Button Content="Tedarikçi Ekle" Click="AddSupplierButton_Click" />
+                            <Button Content="Satın Alma" Click="CreatePurchaseButton_Click" />
+                            <Button Content="Fire" Style="{StaticResource DangerButton}" Click="RecordWastageButton_Click" />
+                            <Button Content="Hareketler" Click="LoadMovementsButton_Click" />
+                        </WrapPanel>
+                        <GroupBox Grid.Row="1" Header="Stok kalemleri">
+                            <DataGrid x:Name="StockItemsGrid" ItemsSource="{Binding StockItems}" />
+                        </GroupBox>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Birimler">
+                                <DataGrid x:Name="UnitsGrid" ItemsSource="{Binding Units}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Tedarikçiler">
+                                <DataGrid x:Name="SuppliersGrid" ItemsSource="{Binding Suppliers}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="2" Header="Son hareketler">
+                                <DataGrid x:Name="MovementsGrid" ItemsSource="{Binding StockMovements}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Kasa" Tag="shift">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="220" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Kasa Ekle" Click="AddRegisterButton_Click" />
+                            <Button Content="Oturum Aç" Click="OpenSessionButton_Click" />
+                            <Button Content="Açık Oturum" Click="LoadOpenSessionButton_Click" />
+                            <Button Content="Para Giriş" Click="PayInButton_Click" />
+                            <Button Content="Para Çıkış" Click="PayOutButton_Click" />
+                            <Button Content="Oturum Kapat" Click="CloseSessionButton_Click" />
+                            <Button Content="Z Rapor" Click="ZReportButton_Click" />
+                        </WrapPanel>
+                        <GroupBox Grid.Row="1" Header="Kasalar">
+                            <DataGrid x:Name="RegistersGrid" ItemsSource="{Binding Registers}" />
+                        </GroupBox>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Aktif oturum">
+                                <DataGrid ItemsSource="{Binding ShiftSessions}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Z rapor ödeme kırılımı">
+                                <DataGrid ItemsSource="{Binding PaymentBreakdown}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Finans" Tag="finance">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="240" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Finans Yenile" Click="RefreshFinanceButton_Click" />
+                            <Button Content="Gelir/Gider" Click="AddFinanceTransactionButton_Click" />
+                            <Button Content="Hesap" Click="AddFinanceAccountButton_Click" />
+                            <Button Content="Cari" Click="AddCounterpartyButton_Click" />
+                            <TextBlock Text="{Binding FinanceSummaryText}" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" Margin="8,0,0,0" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Gelir / gider hareketleri">
+                                <DataGrid ItemsSource="{Binding FinanceTransactions}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Nakit akışı">
+                                <DataGrid ItemsSource="{Binding CashflowDays}" />
+                            </GroupBox>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Hesaplar">
+                                <DataGrid ItemsSource="{Binding FinanceAccounts}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Cari">
+                                <DataGrid ItemsSource="{Binding Counterparties}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Fiş" Tag="print">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="220" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Hesap Önizle" Click="PreviewReceiptButton_Click" />
+                            <Button Content="Mutfak Önizle" Click="PreviewKitchenTicketButton_Click" />
+                            <Button Content="Hesap Yazdır" Click="QueueReceiptButton_Click" />
+                            <Button Content="Mutfak Yazdır" Click="QueueKitchenTicketButton_Click" />
+                            <Button Content="ESC/POS Kaydet" Click="SaveEscPosButton_Click" />
+                            <Button Content="e-Fatura Kes" Click="IssueEInvoiceButton_Click" />
+                            <Button Content="Kuyruk Yenile" Click="RefreshPrintButton_Click" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Hesap fişi">
+                                <TextBox Text="{Binding ReceiptPreview}" FontFamily="Consolas" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Sipariş fişi">
+                                <TextBox Text="{Binding KitchenTicketPreview}" FontFamily="Consolas" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto" />
+                            </GroupBox>
+                        </Grid>
+                        <GroupBox Grid.Row="2" Header="Yazdırma kuyruğu">
+                            <DataGrid ItemsSource="{Binding PrintJobs}" />
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Entegrasyon" Tag="integrations">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="260" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Connector" Click="AddConnectorButton_Click" />
+                            <Button Content="Connector Durum" Click="ConnectorStatusButton_Click" />
+                            <Button Content="Webhook" Click="AddWebhookButton_Click" />
+                            <Button Content="Webhook Durum" Click="WebhookStatusButton_Click" />
+                            <Button Content="Event Kuyruk" Click="QueueEventButton_Click" />
+                            <Button Content="Terminal" Click="AddTerminalButton_Click" />
+                            <Button Content="Komut Kuyruk" Click="QueueTerminalCommandButton_Click" />
+                            <Button Content="Sent" Click="MarkCommandSentButton_Click" />
+                            <Button Content="Completed" Click="MarkCommandCompletedButton_Click" />
+                            <Button Content="Failed" Style="{StaticResource DangerButton}" Click="MarkCommandFailedButton_Click" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Connector">
+                                <DataGrid x:Name="ConnectorsGrid" ItemsSource="{Binding Connectors}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Webhook">
+                                <DataGrid x:Name="WebhooksGrid" ItemsSource="{Binding Webhooks}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="2" Header="Terminaller">
+                                <DataGrid x:Name="TerminalsGrid" ItemsSource="{Binding Terminals}" />
+                            </GroupBox>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Event outbox">
+                                <DataGrid x:Name="EventsGrid" ItemsSource="{Binding IntegrationEvents}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Terminal komutları">
+                                <DataGrid x:Name="CommandsGrid" ItemsSource="{Binding TerminalCommands}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Sync" Tag="sync">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="240" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Cihaz Kaydet" Click="RegisterDeviceButton_Click" />
+                            <Button Content="Heartbeat" Click="HeartbeatButton_Click" />
+                            <Button Content="Pull" Click="PullChangesButton_Click" />
+                            <Button Content="Ack" Click="AckPullButton_Click" />
+                            <Button Content="Push Mutation" Click="PushMutationButton_Click" />
+                            <TextBlock Text="{Binding SyncStatusText}" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" Margin="8,0,0,0" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Entity katalogu">
+                                <DataGrid x:Name="SyncEntitiesGrid" ItemsSource="{Binding SyncEntities}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Open conflict">
+                                <DataGrid x:Name="SyncConflictsGrid" ItemsSource="{Binding SyncConflicts}" />
+                            </GroupBox>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Pending mutation">
+                                <DataGrid x:Name="PendingMutationsGrid" ItemsSource="{Binding PendingMutations}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Son pull değişiklikleri">
+                                <DataGrid x:Name="SyncChangesGrid" ItemsSource="{Binding SyncChanges}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Rapor" Tag="reports">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="260" />
+                        </Grid.RowDefinitions>
+                        <WrapPanel Style="{StaticResource ToolbarPanel}">
+                            <Button Content="Rapor Yenile" Click="RefreshReportsButton_Click" />
+                            <Button Content="Gün Arşivle" Click="ArchiveDayButton_Click" />
+                            <Button Content="MV Refresh" Click="RefreshMaterializedViewButton_Click" />
+                            <Button Content="ML CSV" Click="ExportMlCsvButton_Click" />
+                            <TextBlock Text="{Binding ReportRangeText}" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" Margin="8,0,0,0" />
+                        </WrapPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Günlük özet">
+                                <DataGrid ItemsSource="{Binding DailySummaries}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Top ürünler">
+                                <DataGrid ItemsSource="{Binding TopItems}" />
+                            </GroupBox>
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <GroupBox Header="Saatlik">
+                                <DataGrid ItemsSource="{Binding HourlyStats}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="1" Header="Kategori satış">
+                                <DataGrid ItemsSource="{Binding CategorySales}" />
+                            </GroupBox>
+                            <GroupBox Grid.Column="2" Header="Ödeme yöntemleri">
+                                <DataGrid ItemsSource="{Binding PaymentMethods}" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <Border Grid.Row="2" Background="{StaticResource InkBrush}">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="White" VerticalAlignment="Center" Margin="14,0" />
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

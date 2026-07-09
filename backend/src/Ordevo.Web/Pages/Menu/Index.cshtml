@@ -1,0 +1,307 @@
+@page "/menu"
+@using System.Globalization
+@model Ordevo.Web.Pages.Menu.IndexModel
+@{
+    ViewData["Title"] = "Menü";
+    ViewData["Section"] = "Ürün CMS";
+
+    var categories = Model.Categories.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToList();
+    var items = Model.Items.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToList();
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="admin-page">
+    <header class="admin-title">
+        <div>
+            <h2>Menü Yönetimi</h2>
+            <p>Kategorileri, ürünleri, fiyatları ve seçenekleri yönetin</p>
+        </div>
+        <div class="admin-title-actions">
+            <a class="btn btn-sm btn-getir" href="#add-category"><i class="bi bi-plus-lg"></i><span>Kategori Ekle</span></a>
+            <a class="btn btn-sm btn-getir" href="#add-item"><i class="bi bi-plus-lg"></i><span>Ürün Ekle</span></a>
+        </div>
+    </header>
+
+    <div class="admin-layout two-panels">
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Kategoriler</h3>
+                <span class="admin-count">@categories.Count</span>
+            </div>
+
+            <details id="add-category" class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Kategori ekle</span></summary>
+                <form method="post" asp-page-handler="Category" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Category.Color" value="" />
+                    <input type="hidden" asp-for="Category.IsActive" value="true" />
+                    <div class="row g-2">
+                        <div class="col-md-8"><input class="form-control form-control-sm" asp-for="Category.Name" placeholder="Kategori adı" /></div>
+                        <div class="col-md-4"><input type="number" class="form-control form-control-sm" asp-for="Category.SortOrder" placeholder="Sıra" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-category-list">
+                <div class="admin-category-row active">
+                    <div class="category-main">
+                        <i class="bi bi-list-ul"></i>
+                        <strong>Tüm Ürünler (@items.Count)</strong>
+                    </div>
+                </div>
+
+                @foreach (var category in categories)
+                {
+                    <article class="admin-category-row @(category.IsActive ? "" : "muted")">
+                        <div class="category-main">
+                            <i class="bi bi-folder-fill"></i>
+                            <div>
+                                <strong>@category.Name (@items.Count(x => x.CategoryId == category.Id))</strong>
+                                <small>Sıra @category.SortOrder · @(category.IsActive ? "Aktif" : "Pasif")</small>
+                            </div>
+                        </div>
+                        <div class="admin-row-actions">
+                            <details class="admin-row-editor">
+                                <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                <form method="post" asp-page-handler="Category" class="admin-popover-form">
+                                    <input type="hidden" name="Category.Id" value="@category.Id" />
+                                    <input type="hidden" name="Category.Color" value="" />
+                                    <input class="form-control form-control-sm" name="Category.Name" value="@category.Name" />
+                                    <input type="number" class="form-control form-control-sm" name="Category.SortOrder" value="@category.SortOrder" />
+                                    <label class="form-check">
+                                        <input type="hidden" name="Category.IsActive" value="false" />
+                                        <input class="form-check-input" type="checkbox" name="Category.IsActive" value="true" checked="@category.IsActive" />
+                                        <span class="form-check-label">Aktif</span>
+                                    </label>
+                                    <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                </form>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteCategory" asp-route-id="@category.Id">
+                                <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Kategori silinsin mi?" title="Sil"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-head">
+                <h3>Tüm Ürünler</h3>
+                <span class="admin-count">@items.Count</span>
+            </div>
+
+            <details id="add-item" class="admin-add">
+                <summary><i class="bi bi-plus-lg"></i><span>Ürün ekle</span></summary>
+                <form method="post" asp-page-handler="Item" class="admin-form mt-2">
+                    <input type="hidden" asp-for="Item.IsActive" value="true" />
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" asp-for="Item.CategoryId">
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4"><input class="form-control form-control-sm" asp-for="Item.Name" placeholder="Ürün adı" /></div>
+                        <div class="col-md-2"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Item.Price" placeholder="Fiyat" /></div>
+                        <div class="col-md-2"><input type="number" step="0.01" min="0" class="form-control form-control-sm" asp-for="Item.VatRate" placeholder="KDV" /></div>
+                        <div class="col-md-6"><input class="form-control form-control-sm" asp-for="Item.PrepStation" placeholder="Mutfak istasyonu" /></div>
+                        <div class="col-md-6"><input class="form-control form-control-sm" asp-for="Item.Description" placeholder="Açıklama" /></div>
+                    </div>
+                    <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                </form>
+            </details>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Ürün Adı</th>
+                            <th>Kategori</th>
+                            <th>Fiyat</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in items)
+                        {
+                            var categoryName = categories.FirstOrDefault(x => x.Id == item.CategoryId)?.Name ?? "-";
+                            var assignedGroups = Model.Tree?.Categories
+                                .SelectMany(x => x.Items)
+                                .FirstOrDefault(x => x.Id == item.Id)?
+                                .ModifierGroupIds.ToHashSet() ?? new HashSet<string>();
+                            <tr class="@(item.IsActive ? "" : "muted")">
+                                <td>
+                                    <strong>@item.Name</strong>
+                                    <small>@(item.PrepStation ?? "İstasyon yok") · @assignedGroups.Count seçenek grubu</small>
+                                </td>
+                                <td><span class="admin-badge">@categoryName</span></td>
+                                <td>@UiFormat.Money(item.Price)</td>
+                                <td><span class="admin-badge @(item.IsActive ? "ok" : "off")">@(item.IsActive ? "Aktif" : "Pasif")</span></td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <form method="post" asp-page-handler="Item">
+                                            <input type="hidden" name="Item.Id" value="@item.Id" />
+                                            <input type="hidden" name="Item.CategoryId" value="@item.CategoryId" />
+                                            <input type="hidden" name="Item.Name" value="@item.Name" />
+                                            <input type="hidden" name="Item.Description" value="@item.Description" />
+                                            <input type="hidden" name="Item.Price" value="@item.Price.ToString(CultureInfo.InvariantCulture)" />
+                                            <input type="hidden" name="Item.VatRate" value="@item.VatRate.ToString(CultureInfo.InvariantCulture)" />
+                                            <input type="hidden" name="Item.Sku" value="@item.Sku" />
+                                            <input type="hidden" name="Item.ImageUrl" value="@item.ImageUrl" />
+                                            <input type="hidden" name="Item.PrepStation" value="@item.PrepStation" />
+                                            <input type="hidden" name="Item.SortOrder" value="@item.SortOrder" />
+                                            <input type="hidden" name="Item.IsActive" value="@(!item.IsActive)" />
+                                            <button class="btn btn-sm btn-light-icon" type="submit" title="@(item.IsActive ? "Pasifleştir" : "Aktifleştir")">
+                                                <i class="bi @(item.IsActive ? "bi-pause" : "bi-play")"></i>
+                                            </button>
+                                        </form>
+                                        <details class="admin-row-editor">
+                                            <summary title="Düzenle"><i class="bi bi-pencil"></i></summary>
+                                            <form method="post" asp-page-handler="Item" class="admin-popover-form wide">
+                                                <input type="hidden" name="Item.Id" value="@item.Id" />
+                                                <select class="form-select form-select-sm" name="Item.CategoryId">
+                                                    @foreach (var option in categories)
+                                                    {
+                                                        <option value="@option.Id" selected="@(option.Id == item.CategoryId)">@option.Name</option>
+                                                    }
+                                                </select>
+                                                <input class="form-control form-control-sm" name="Item.Name" value="@item.Name" />
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Item.Price" value="@item.Price.ToString(CultureInfo.InvariantCulture)" />
+                                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="Item.VatRate" value="@item.VatRate.ToString(CultureInfo.InvariantCulture)" />
+                                                <input class="form-control form-control-sm" name="Item.PrepStation" value="@item.PrepStation" placeholder="Mutfak istasyonu" />
+                                                <input class="form-control form-control-sm" name="Item.Description" value="@item.Description" placeholder="Açıklama" />
+                                                <input type="hidden" name="Item.Sku" value="@item.Sku" />
+                                                <input type="hidden" name="Item.ImageUrl" value="@item.ImageUrl" />
+                                                <input type="hidden" name="Item.SortOrder" value="@item.SortOrder" />
+                                                <label class="form-check">
+                                                    <input type="hidden" name="Item.IsActive" value="false" />
+                                                    <input class="form-check-input" type="checkbox" name="Item.IsActive" value="true" checked="@item.IsActive" />
+                                                    <span class="form-check-label">Aktif</span>
+                                                </label>
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+                                        <details class="admin-row-editor">
+                                            <summary title="Seçenekler"><i class="bi bi-diagram-3"></i></summary>
+                                            <form method="post" asp-page-handler="AssignModifierGroups" asp-route-id="@item.Id" class="admin-popover-form wide">
+                                                <strong>Seçenek grupları</strong>
+                                                <div class="admin-check-list">
+                                                    @foreach (var group in Model.ModifierGroups)
+                                                    {
+                                                        <label>
+                                                            <input class="form-check-input" type="checkbox" name="groupIds" value="@group.Id" checked="@assignedGroups.Contains(group.Id)" />
+                                                            <span>@group.Name</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                            </form>
+                                        </details>
+                                        <form method="post" asp-page-handler="DeleteItem" asp-route-id="@item.Id">
+                                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Ürün silinsin mi?" title="Sil"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <section class="admin-card mt-3">
+        <div class="admin-card-head">
+            <h3>Seçenek Grupları</h3>
+            <span class="admin-count">@Model.ModifierGroups.Count</span>
+        </div>
+
+        <details class="admin-add">
+            <summary><i class="bi bi-plus-lg"></i><span>Seçenek grubu ekle</span></summary>
+            <form method="post" asp-page-handler="ModifierGroup" class="admin-form mt-2">
+                <div class="row g-2">
+                    <div class="col-md-4"><input class="form-control form-control-sm" asp-for="ModifierGroup.Name" placeholder="Grup adı" /></div>
+                    <div class="col-md-2"><input type="number" min="0" class="form-control form-control-sm" asp-for="ModifierGroup.MinSelect" placeholder="Min" /></div>
+                    <div class="col-md-2"><input type="number" min="1" class="form-control form-control-sm" asp-for="ModifierGroup.MaxSelect" placeholder="Max" /></div>
+                    <div class="col-md-2"><label class="form-check mt-1"><input class="form-check-input" type="checkbox" asp-for="ModifierGroup.IsRequired" /><span class="form-check-label">Zorunlu</span></label></div>
+                </div>
+                <button class="btn btn-sm btn-getir mt-2" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+            </form>
+        </details>
+
+        <div class="modifier-simple-grid">
+            @foreach (var group in Model.ModifierGroups)
+            {
+                <article class="modifier-simple-card">
+                    <div class="modifier-simple-head">
+                        <div>
+                            <strong>@group.Name</strong>
+                            <small>Min @group.MinSelect · Max @group.MaxSelect · @group.Modifiers.Count seçenek</small>
+                        </div>
+                        <span class="admin-badge @(group.IsRequired ? "warn" : "")">@(group.IsRequired ? "Zorunlu" : "Opsiyonel")</span>
+                    </div>
+                    <div class="admin-row-actions mt-2">
+                        <details class="admin-row-editor">
+                            <summary><i class="bi bi-pencil"></i></summary>
+                            <form method="post" asp-page-handler="ModifierGroup" class="admin-popover-form wide">
+                                <input type="hidden" name="ModifierGroup.Id" value="@group.Id" />
+                                <input class="form-control form-control-sm" name="ModifierGroup.Name" value="@group.Name" />
+                                <input type="number" min="0" class="form-control form-control-sm" name="ModifierGroup.MinSelect" value="@group.MinSelect" />
+                                <input type="number" min="1" class="form-control form-control-sm" name="ModifierGroup.MaxSelect" value="@group.MaxSelect" />
+                                <label class="form-check">
+                                    <input type="hidden" name="ModifierGroup.IsRequired" value="false" />
+                                    <input class="form-check-input" type="checkbox" name="ModifierGroup.IsRequired" value="true" checked="@group.IsRequired" />
+                                    <span class="form-check-label">Zorunlu</span>
+                                </label>
+                                <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                            </form>
+                        </details>
+                        <form method="post" asp-page-handler="DeleteModifierGroup" asp-route-id="@group.Id">
+                            <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Seçenek grubu silinsin mi?"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
+
+                    <form method="post" asp-page-handler="Modifier" class="modifier-add-row">
+                        <input type="hidden" name="Modifier.GroupId" value="@group.Id" />
+                        <input class="form-control form-control-sm" name="Modifier.Name" placeholder="Seçenek" />
+                        <input type="number" step="0.01" class="form-control form-control-sm" name="Modifier.PriceDelta" placeholder="Fark" />
+                        <button class="btn btn-sm btn-light-icon" type="submit"><i class="bi bi-plus-lg"></i></button>
+                    </form>
+
+                    <div class="modifier-option-list">
+                        @foreach (var modifier in group.Modifiers.OrderBy(x => x.SortOrder))
+                        {
+                            <div class="modifier-option">
+                                <span>@modifier.Name</span>
+                                <strong>@UiFormat.Money(modifier.PriceDelta)</strong>
+                                <details class="admin-row-editor">
+                                    <summary><i class="bi bi-pencil"></i></summary>
+                                    <form method="post" asp-page-handler="Modifier" class="admin-popover-form">
+                                        <input type="hidden" name="Modifier.Id" value="@modifier.Id" />
+                                        <input type="hidden" name="Modifier.GroupId" value="@group.Id" />
+                                        <input class="form-control form-control-sm" name="Modifier.Name" value="@modifier.Name" />
+                                        <input type="number" step="0.01" class="form-control form-control-sm" name="Modifier.PriceDelta" value="@modifier.PriceDelta.ToString(CultureInfo.InvariantCulture)" />
+                                        <input type="number" class="form-control form-control-sm" name="Modifier.SortOrder" value="@modifier.SortOrder" />
+                                        <label class="form-check">
+                                            <input type="hidden" name="Modifier.IsActive" value="false" />
+                                            <input class="form-check-input" type="checkbox" name="Modifier.IsActive" value="true" checked="@modifier.IsActive" />
+                                            <span class="form-check-label">Aktif</span>
+                                        </label>
+                                        <button class="btn btn-sm btn-getir" type="submit"><i class="bi bi-check2"></i><span>Kaydet</span></button>
+                                    </form>
+                                </details>
+                                <form method="post" asp-page-handler="DeleteModifier" asp-route-id="@modifier.Id">
+                                    <button class="btn btn-sm btn-danger-icon" type="submit" data-confirm="Seçenek silinsin mi?"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+</div>

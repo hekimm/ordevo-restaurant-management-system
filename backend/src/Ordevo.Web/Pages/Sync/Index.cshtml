@@ -1,0 +1,54 @@
+@page "/sync"
+@model Ordevo.Web.Pages.Sync.IndexModel
+@{
+    ViewData["Title"] = "Sync";
+    ViewData["Section"] = "Offline";
+}
+<partial name="~/Pages/Shared/_Alerts.cshtml" model="Model.Errors" />
+
+<div class="content-grid two-col">
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Entity katalogu</h2>
+            <span class="count-pill">@Model.Entities.Count entity</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Entity</th><th>Tablo</th><th>Branch</th><th>Push</th></tr></thead>
+                <tbody>
+                @foreach (var entity in Model.Entities)
+                {
+                    <tr>
+                        <td>@entity.EntityName</td>
+                        <td>@entity.TableName</td>
+                        <td>@(entity.IsBranchScoped ? "evet" : "hayır")</td>
+                        <td><span class="status-pill @(entity.AllowClientPush ? "warn" : "muted")">@(entity.AllowClientPush ? "açık" : "kapalı")</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Pending mutation</h2>
+            <span class="count-pill">@Model.PendingMutations.Count kayıt</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Entity</th><th>Operasyon</th><th>Cihaz</th><th>Durum</th></tr></thead>
+                <tbody>
+                @foreach (var mutation in Model.PendingMutations)
+                {
+                    <tr>
+                        <td>@mutation.EntityName</td>
+                        <td>@mutation.Operation</td>
+                        <td>@UiFormat.ShortId(mutation.DeviceId)</td>
+                        <td><span class="status-pill warn">@mutation.Status</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
